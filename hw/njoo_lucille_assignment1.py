@@ -290,8 +290,8 @@ if __name__ == '__main__':
     train_steps = [train_steps_iris, train_steps_wine]
 
     # TODO: Set a tolerance for each dataset
-    tol_iris = 0.01
-    tol_wine = 0.01
+    tol_iris = 10.0
+    tol_wine = 10.0
 
     tols = [tol_iris, tol_wine]
 
