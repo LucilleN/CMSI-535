@@ -6,7 +6,7 @@ from sklearn.linear_model import Perceptron
 '''
 Name: Njoo, Lucille
 
-Collaborators: Doe, Jane (Please write names in <Last Name, First Name> format)
+Collaborators: Arteaga, Andrew (Please write names in <Last Name, First Name> format)
 
 Collaboration details: Discussed <function name> implementation details with Jane Doe.
 
@@ -25,32 +25,32 @@ Results on the iris dataset using scikit-learn Perceptron model
 Training set mean accuracy: 0.8512
 Validation set mean accuracy: 0.7333
 Testing set mean accuracy: 0.9286
-Results on the iris dataset using our Perceptron model trained with 0 steps and tolerance of 0.0
-Training set mean accuracy: 0.0000
-Validation set mean accuracy: 0.0000
-Results on the iris dataset using our Perceptron model trained with 0 steps and tolerance of 0.0
-Training set mean accuracy: 0.0000
-Validation set mean accuracy: 0.0000
-Results on the iris dataset using our Perceptron model trained with 0 steps and tolerance of 0.0
-Training set mean accuracy: 0.0000
-Validation set mean accuracy: 0.0000
-Using best model trained with 0 steps and tolerance of 0.0
-Testing set mean accuracy: 0.0000
+Results on the iris dataset using our Perceptron model trained with 50 steps and tolerance of 1.0
+Training set mean accuracy: 0.8843
+Validation set mean accuracy: 0.8667
+Results on the iris dataset using our Perceptron model trained with 500 steps and tolerance of 1.0
+Training set mean accuracy: 0.8760
+Validation set mean accuracy: 0.8667
+Results on the iris dataset using our Perceptron model trained with 1500 steps and tolerance of 1.0
+Training set mean accuracy: 0.9669
+Validation set mean accuracy: 1.0000
+Using best model trained with 1500 steps and tolerance of 1.0
+Testing set mean accuracy: 0.9286
 Results on the wine dataset using scikit-learn Perceptron model
 Training set mean accuracy: 0.5625
 Validation set mean accuracy: 0.4118
 Testing set mean accuracy: 0.4706
-Results on the wine dataset using our Perceptron model trained with 0 steps and tolerance of 0.0
-Training set mean accuracy: 0.0000
-Validation set mean accuracy: 0.0000
-Results on the wine dataset using our Perceptron model trained with 0 steps and tolerance of 0.0
-Training set mean accuracy: 0.0000
-Validation set mean accuracy: 0.0000
-Results on the wine dataset using our Perceptron model trained with 0 steps and tolerance of 0.0
-Training set mean accuracy: 0.0000
-Validation set mean accuracy: 0.0000
-Using best model trained with 0 steps and tolerance of 0.0
-Testing set mean accuracy: 0.0000
+Results on the wine dataset using our Perceptron model trained with 500 steps and tolerance of 1.0
+Training set mean accuracy: 0.4375
+Validation set mean accuracy: 0.3529
+Results on the wine dataset using our Perceptron model trained with 1000 steps and tolerance of 1.0
+Training set mean accuracy: 0.5278
+Validation set mean accuracy: 0.4118
+Results on the wine dataset using our Perceptron model trained with 1500 steps and tolerance of 1.0
+Training set mean accuracy: 0.5417
+Validation set mean accuracy: 0.4118
+Using best model trained with 1000 steps and tolerance of 1.0
+Testing set mean accuracy: 0.4706
 '''
 
 '''
@@ -76,8 +76,8 @@ class PerceptronMultiClass(object):
         N = x.shape[1]
 
         # Reshape x so that it includes the threshold in x_0
-        threshold = 0.5 * np.ones([1, N])  # (1 x N)
-        x = np.concatenate([threshold, x], axis=0)  # (d+1 x N)
+        thresholds = 1.0/self.__n_class * np.ones([1, N])  # (1 x N)
+        x = np.concatenate([thresholds, x], axis=0)  # (d+1 x N)
             
         # For each of N data samples, check if our prediction is correct
         for n in range(N):
@@ -86,15 +86,22 @@ class PerceptronMultiClass(object):
 
             # The weights for the current class's hyperplane is in column c of self.__weights
             # we expand dims so that it's a 2D array in the shape (d+1 x 1) instead of a 1D array in the shape (d+1)
-            weights_for_each_class = [np.expand_dims(self.__weights[:, c], axis=0) for c in range(self.__n_class)]
+            weights_for_each_class = [np.expand_dims(self.__weights[:, c], axis=-1) for c in range(self.__n_class)]
             # print("weights, are you even updating? {}".format(weights_for_each_class))
-            label_confidence_scores = [np.matmul(weights_c, x_n) for weights_c in weights_for_each_class]
+            prediction_confidence_scores = [np.matmul(weights_c.T, x_n) for weights_c in weights_for_each_class]
+
+            # predictions = np.zeros([self.__n_class])
+
+            # for c in range(self.__n_class):
+            #     weights_c = np.expand_dims(self.__weights[:, c], axis=-1)
+            #     predictions
+
 
             # print("label confidence scores: {}".format(label_confidence_scores))
 
             # Predict whether x_n is class c or not
-            highest_confidence = max(label_confidence_scores)
-            predicted_label = label_confidence_scores.index(highest_confidence)
+            highest_confidence = max(prediction_confidence_scores)
+            predicted_label = prediction_confidence_scores.index(highest_confidence)
 
             # If our prediction does not match the ground truth label, update weights
             groundtruth_label = y[n]
@@ -105,10 +112,9 @@ class PerceptronMultiClass(object):
                 # print("self.__weights[:, predicted_label] SHAPE: {}".format(self.__weights[:, predicted_label].shape))
                 # print("weights_for_each_class[predicted_label].T SHAPE: {}".format(weights_for_each_class[predicted_label].T.shape))
                 # print("x_n SHAPE: {}".format(x_n.shape))
-                self.__weights[:, predicted_label] = (weights_for_each_class[predicted_label].T - x_n).ravel()
-                self.__weights[:, groundtruth_label] = (weights_for_each_class[groundtruth_label].T + x_n).ravel()
-                continue
-            # print('didnt update weights')
+                test = weights_for_each_class[predicted_label] - np.squeeze(x_n, axis=-1) 
+                self.__weights[:, predicted_label] = self.__weights[:, predicted_label] - np.squeeze(x_n, axis=-1) 
+                self.__weights[:, groundtruth_label] = self.__weights[:, groundtruth_label] + np.squeeze(x_n, axis=-1) 
 
 
     def fit(self, x, y, T=100, tol=1e-3):
@@ -126,15 +132,17 @@ class PerceptronMultiClass(object):
             tol : float
                 change of loss tolerance, if greater than loss + tolerance, then stop
         '''
-        # Initialize the weights to a (d+1 x 1) matrix with w_0 = -1 to account for the threshold
-        self.__weights = np.zeros([x.shape[0]+1, self.__n_class])  # (d+1 x n)
-        # self.__weights = np.zeros([ self.__n_class, x.shape[0]+1])  # (N x d+1)
-        self.__weights[0, :] = -1
-
+        
         # The number of classes is the number of unique values in y
         # Note: This program assumes class labels will start at 0 and increase (0, 1, 2, 3, ..)
         self.__n_class = len(np.unique(y))
 
+        # Initialize the weights to a (d+1 x c) matrix, where each column is the weights for class c 
+        # Then set w_0 = -1 in all classes' columns to account for the threshold
+        d = x.shape[0]
+        self.__weights = np.zeros([d+1, self.__n_class])  # (d+1 x c)
+        self.__weights[0, :] = -1.0
+        
         # Keep track of loss and weights so that we know to stop when we have minimized loss
         # initialize at 2.0 because the loss we compute can be at most 1.0, since it's normalized
         prev_loss = 2.0  
@@ -142,7 +150,8 @@ class PerceptronMultiClass(object):
 
         for t in range(T):
             predictions = self.predict(x)
-            loss = np.mean(np.where(predictions != y, 1, 0))
+            loss = np.mean(np.where(predictions != y, 1.0, 0.0))
+            # print("Loss at step {}: {}".format(t, loss))
 
             # If we've minimized loss already, stop
             if loss == 0.0:
@@ -172,38 +181,34 @@ class PerceptronMultiClass(object):
         N = x.shape[1]
 
         # Reshape x to be (d+1 x N) where the first term in each sample is the threshold
-        threshold = 0.5 * np.ones([1, N])  # (1 x N)
+        threshold = 1/self.__n_class * np.ones([1, N])  # (1 x N)
         x = np.concatenate([threshold, x], axis=0)  # (d+1 x N)
 
-        label_confidence_scores = np.zeros([self.__n_class, N])  
+        # label_confidence_scores = np.zeros([self.__n_class, N])  
 
-        for c in range(self.__n_class):
-            weights_c = np.expand_dims(self.__weights[:, c], axis=0)
-            label_c_confidence = np.matmul(weights_c, x) # (1 x N) 
-            label_confidence_scores[c, :] = label_c_confidence
+        # for c in range(self.__n_class):
+        #     weights_c = np.expand_dims(self.__weights[:, c], axis=0)
+        #     label_c_confidence = np.matmul(weights_c, x) # (1 x N) 
+        #     label_confidence_scores[c, :] = label_c_confidence
         
-        print("label_confidence_scores: \n{}".format(label_confidence_scores))
-        # Actual predictions are the classes that had the highest values
-        predictions = np.expand_dims(np.argmax(label_confidence_scores, axis=0), axis=0)
+        # # print("label_confidence_scores: \n{}".format(label_confidence_scores))
+        # # Actual predictions are the classes that had the highest values
+        # predictions = np.expand_dims(np.argmax(label_confidence_scores, axis=0), axis=0)
 
         # # trying to get predictions manually by iterating through and doing mat mul one by one?????????? i have no idea what im doing
-        # predictions = np.zeros([1, N])
-        # for n in range(N):
-        #     # Extract the input feature values for the current sample in the shape (d+1 x 1)
-        #     x_n = np.expand_dims(x[:, n], axis=-1)
+        predictions = np.zeros([1, N])
+        for n in range(N):
+            # Extract the input feature values for the current sample in the shape (d+1 x 1)
+            x_n = np.expand_dims(x[:, n], axis=-1)
 
-        #     # The weights for the current class's hyperplane is in column c of self.__weights
-        #     # we expand dims so that it's a 2D array in the shape (d+1 x 1) instead of a 1D array in the shape (d+1)
-        #     weights_for_each_class = [np.expand_dims(self.__weights[:, c], axis=0) for c in range(self.__n_class)]
-        #     # print("weights, are you even updating? {}".format(weights_for_each_class))
-        #     label_confidence_scores = [np.matmul(weights_c, x_n) for weights_c in weights_for_each_class]
+            # The weights for the current class's hyperplane is in column c of self.__weights
+            # we expand dims so that it's a 2D array in the shape (d+1 x 1) instead of a 1D array in the shape (d+1)
+            weights_for_each_class = [np.expand_dims(self.__weights[:, c], axis=-1) for c in range(self.__n_class)]
+            label_confidence_scores = [np.matmul(weights_c.T, x_n) for weights_c in weights_for_each_class]
 
-        #     # print("label confidence scores: {}".format(label_confidence_scores))
-
-        #     # Predict whether x_n is class c or not
-        #     highest_confidence = max(label_confidence_scores)
-        #     predicted_label = label_confidence_scores.index(highest_confidence)
-        #     predictions[0, n] = predicted_label
+            highest_confidence = max(label_confidence_scores)
+            predicted_label = label_confidence_scores.index(highest_confidence)
+            predictions[0, n] = predicted_label
         
         return predictions
 
@@ -223,9 +228,9 @@ class PerceptronMultiClass(object):
         '''
         # Predict labels for given samples using our hypothesis weights
         predictions = self.predict(x) # (1 x N) 
-        print("SCORING!!!!!!!!!")
-        print("predictions: {}".format(predictions))
-        print("y: {}".format(y))
+        # print("SCORING!!!!!!!!!")
+        # print("predictions: {}".format(predictions))
+        # print("y: {}".format(y))
         scores = np.where(predictions == y, 1.0, 0.0)
         return np.mean(scores)
 
@@ -283,15 +288,15 @@ if __name__ == '__main__':
     datasets = [iris_data, wine_data]
     tags = ['iris', 'wine']
 
-    # TODO: Experiment with 3 different max training steps (T) for each dataset
-    train_steps_iris = [10, 20, 100]
-    train_steps_wine = [10, 20, 100]
+    # Experiment with 3 different max training steps (T) for each dataset
+    train_steps_iris = [50, 500, 1500]
+    train_steps_wine = [500, 1000, 1500]
 
     train_steps = [train_steps_iris, train_steps_wine]
 
-    # TODO: Set a tolerance for each dataset
-    tol_iris = 10.0
-    tol_wine = 10.0
+    # Set a tolerance for each dataset
+    tol_iris = 1.0 # 0.5 # 
+    tol_wine = 1.0 # 0.5 # 
 
     tols = [tol_iris, tol_wine]
 
