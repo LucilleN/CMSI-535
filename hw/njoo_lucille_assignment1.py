@@ -148,7 +148,6 @@ class PerceptronMultiClass(object):
         for t in range(T):
             predictions = self.predict(x)
             loss = np.mean(np.where(predictions != y, 1.0, 0.0))
-            # print("Loss at step {}: {}".format(t, loss))
 
             # If we've minimized loss already, stop
             if loss == 0.0:
@@ -178,18 +177,6 @@ class PerceptronMultiClass(object):
         N = x.shape[1]
         x = self.__concat_threshold_to_x(x)
 
-        # label_confidence_scores = np.zeros([self.__n_class, N])  
-
-        # for c in range(self.__n_class):
-        #     weights_c = np.expand_dims(self.__weights[:, c], axis=0)
-        #     label_c_confidence = np.matmul(weights_c, x) # (1 x N) 
-        #     label_confidence_scores[c, :] = label_c_confidence
-        
-        # # print("label_confidence_scores: \n{}".format(label_confidence_scores))
-        # # Actual predictions are the classes that had the highest values
-        # predictions = np.expand_dims(np.argmax(label_confidence_scores, axis=0), axis=0)
-
-        # # trying to get predictions manually by iterating through and doing mat mul one by one?????????? i have no idea what im doing
         predictions = np.zeros([1, N])
         for n in range(N):
             # Extract the input feature values for the current sample in the shape (d+1 x 1)
@@ -200,6 +187,7 @@ class PerceptronMultiClass(object):
             weights_for_each_class = [np.expand_dims(self.__weights[:, c], axis=-1) for c in range(self.__n_class)]
             label_confidence_scores = [np.matmul(weights_c.T, x_n) for weights_c in weights_for_each_class]
 
+            # Actual predictions are the classes that had the highest values
             highest_confidence = max(label_confidence_scores)
             predicted_label = label_confidence_scores.index(highest_confidence)
             predictions[0, n] = predicted_label
