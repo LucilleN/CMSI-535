@@ -6,20 +6,60 @@ from sklearn.linear_model import Perceptron
 '''
 Name: Njoo, Lucille
 
-Collaborators: Arteaga, Andrew (Please write names in <Last Name, First Name> format)
+Collaborators: Arteaga, Andrew
 
-Collaboration details: Discussed <function name> implementation details with Jane Doe.
+Collaboration details: Discussed high-level implementation details for `fit`, `__update`, and 
+`predict` with Andrew Arteaga. I thought my code was broken, so we talked over what each 
+method was doing, and after realizing that our code was doing the same thing in different ways, 
+I did a lot more tuning with the hyperparameters and was able to get good results.
 
 Summary:
 
-You should answer the questions:
 1) What did you do in this assignment?
+
+For this assignment, I implemented a multi-class perceptron class by writing its `fit`, `__update`, 
+`predict`, and `score` methods. In the main function, I created three PerceptronMultiClass models 
+with different numbers of timesteps for both the iris dataset and the wine dataset, then trained 
+and validated them to find the best model for each. I then scored the best models for the iris and 
+wine datasets on the testing data, and the end result is two models that score as well as or better
+than the sklearn Perceptron, with testing set mean accuracies of 0.9286 and 0.5882 respectively. 
+
 2) How did you do it?
+
+To implement the PerceptronMultiClass methods, I used the multi-class perceptron learning algorithm:
+for each of our N data samples, we use the current weights to predict the class of x_n, and if our
+prediction is incorrect, we update the weights of both the classes c_hat and c_star such that our 
+weights for c_hat = weights for c_hat - x_n, and our weights for c_star = weights for c_star + x_n.
+
+Much of this was similar to the PerceptronBinary class we implemented as an in-class exercise, but 
+this time with these main differences to allow for an arbitrary number of classes:
+    - I changed `self.__weights` so that it contained the weight vectors for all of c classes. 
+    - When updating the weights, whereas before we had only had to do a single adjustment, in 
+      PerceptronMultiClass, I updated the weights for both the incorrectly predicted class and the 
+      groundtruth class. 
+    - Rather than the prediction simply being sign(w \dot x), this time, each w \dot x was treated 
+      as a confidence score, and the prediction was the class that produced the highest confidence.
+
+For the main method, I implemented the training loop by initializing the PerceptronMultiClass 
+models, fitting them to the training data, then scoring their accuracies on training, validation, 
+and testing data. In the process, I spent a lot of time tuning the hyperparameters: 
+    - To decide on step and tolerance values to use, I tried tolerances ranging from 0.0001 to 100
+      and steps ranging from 10 to 5000 for each one. 
+    - I found that setting tolerances too low, such as 0.01 or 0.001, caused models to perform 
+      poorly because their training iterations would be cut short, but setting tolerances too high, 
+      such as 10, resulted in lower accuracy as well. 
+    - Increasing the number of steps generally improved the models' scores. For the iris data, the 
+      score seems to hit a maximum at 0.9286. For the wine data, I stopped at 5000 because of the
+      increasing computation time. 
+
 3) What are the constants and hyper-parameters you used?
 
-Scores:
+    - I used tolerances of 1.0 for both the iris and the wine datasets. 
+    - For the iris dataset, I used steps of 50, 500, and 1500 (best was 1500 steps).
+    - For the wine dataset, I used steps of 500, 1000, and 5000 (best was 5000 steps).
 
-Report your scores here. For example,
+
+Scores:
 
 Results on the iris dataset using scikit-learn Perceptron model
 Training set mean accuracy: 0.8512
@@ -46,11 +86,11 @@ Validation set mean accuracy: 0.3529
 Results on the wine dataset using our Perceptron model trained with 1000 steps and tolerance of 1.0
 Training set mean accuracy: 0.5278
 Validation set mean accuracy: 0.4118
-Results on the wine dataset using our Perceptron model trained with 1500 steps and tolerance of 1.0
-Training set mean accuracy: 0.5417
-Validation set mean accuracy: 0.4118
-Using best model trained with 1000 steps and tolerance of 1.0
-Testing set mean accuracy: 0.4706
+Results on the wine dataset using our Perceptron model trained with 5000 steps and tolerance of 1.0
+Training set mean accuracy: 0.5833
+Validation set mean accuracy: 0.5882
+Using best model trained with 5000 steps and tolerance of 1.0
+Testing set mean accuracy: 0.5882
 '''
 
 '''
@@ -72,10 +112,10 @@ class PerceptronMultiClass(object):
                 d x N feature vector
         Returns:
             numpy
-                x+1 x N feature vector with threshold
+                d+1 x N feature vector with threshold
         '''
         N = x.shape[1]
-        # Reshape x so that it includes the threshold in x_0
+        # All the x_0's should be the threshold.
         thresholds = 1.0/self.__n_class * np.ones([1, N])  # (1 x N)
         return np.concatenate([thresholds, x], axis=0)  # (d+1 x N)
 
@@ -95,21 +135,21 @@ class PerceptronMultiClass(object):
             
         # For each of N data samples, check if our prediction is correct
         for n in range(N):
-            # Extract the input feature values for the current sample in the shape (d+1 x 1)
+            # Extract the input feature values for the current sample, in the shape (d+1 x 1)
             x_n = np.expand_dims(x[:, n], axis=-1)
 
-            # The weights for the current class's hyperplane is in column c of self.__weights
-            # we expand dims so that it's a 2D array in the shape (d+1 x 1) instead of a 1D array in the shape (d+1)
+            # The weights for class c's hyperplane is in column c of self.__weights
+            # Expand dims so that each weights_c is a 2D array in the shape (d+1 x 1) instead of a 1D array in the shape (d+1)
             weights_for_each_class = [np.expand_dims(self.__weights[:, c], axis=-1) for c in range(self.__n_class)]
             prediction_confidence_scores = [np.matmul(weights_c.T, x_n) for weights_c in weights_for_each_class]
 
+            # Our predicted class is the one that gives us the highest confidence
             highest_confidence = max(prediction_confidence_scores)
             predicted_label = prediction_confidence_scores.index(highest_confidence)
 
-            # If our prediction does not match the ground truth label, update weights
+            # If our prediction does not match the ground truth label, update weights for c_hat and c_star
             groundtruth_label = y[n]
-            if predicted_label != groundtruth_label:
-                test = weights_for_each_class[predicted_label] - np.squeeze(x_n, axis=-1) 
+            if predicted_label != groundtruth_label: 
                 self.__weights[:, predicted_label] = self.__weights[:, predicted_label] - np.squeeze(x_n, axis=-1) 
                 self.__weights[:, groundtruth_label] = self.__weights[:, groundtruth_label] + np.squeeze(x_n, axis=-1) 
 
@@ -129,9 +169,7 @@ class PerceptronMultiClass(object):
             tol : float
                 change of loss tolerance, if greater than loss + tolerance, then stop
         '''
-        
         # The number of classes is the number of unique values in y
-        # Note: This program assumes class labels will start at 0 and increase (0, 1, 2, 3, ..)
         self.__n_class = len(np.unique(y))
 
         # Initialize the weights to a (d+1 x c) matrix, where each column is the weights for class c 
@@ -141,7 +179,7 @@ class PerceptronMultiClass(object):
         self.__weights[0, :] = -1.0
         
         # Keep track of loss and weights so that we know to stop when we have minimized loss
-        # initialize at 2.0 because the loss we compute can be at most 1.0, since it's normalized
+        # Initialize at 2.0 because the computed loss can be at most 1.0, since it's normalized
         prev_loss = 2.0  
         prev_weights = np.copy(self.__weights)
 
@@ -182,14 +220,15 @@ class PerceptronMultiClass(object):
             # Extract the input feature values for the current sample in the shape (d+1 x 1)
             x_n = np.expand_dims(x[:, n], axis=-1)
 
-            # The weights for the current class's hyperplane is in column c of self.__weights
-            # we expand dims so that it's a 2D array in the shape (d+1 x 1) instead of a 1D array in the shape (d+1)
+            # The weights for class c's hyperplane is in column c of self.__weights
+            # Expand dims so that each weights_c is a 2D array in the shape (d+1 x 1) instead of a 1D array in the shape (d+1)
             weights_for_each_class = [np.expand_dims(self.__weights[:, c], axis=-1) for c in range(self.__n_class)]
             label_confidence_scores = [np.matmul(weights_c.T, x_n) for weights_c in weights_for_each_class]
 
-            # Actual predictions are the classes that had the highest values
+            # Prediction is the class that had the highest confidence
             highest_confidence = max(label_confidence_scores)
             predicted_label = label_confidence_scores.index(highest_confidence)
+
             predictions[0, n] = predicted_label
         
         return predictions
@@ -208,7 +247,7 @@ class PerceptronMultiClass(object):
         Returns:
             float : mean accuracy
         '''
-        # Predict labels for given samples using our hypothesis weights
+        # Predict labels for given feature data using our hypothesis weights
         predictions = self.predict(x) # (1 x N) 
         scores = np.where(predictions == y, 1.0, 0.0)
         return np.mean(scores)
@@ -269,13 +308,13 @@ if __name__ == '__main__':
 
     # Experiment with 3 different max training steps (T) for each dataset
     train_steps_iris = [50, 500, 1500]
-    train_steps_wine = [500, 1000, 1500]
+    train_steps_wine = [500, 1000, 5000]
 
     train_steps = [train_steps_iris, train_steps_wine]
 
     # Set a tolerance for each dataset
-    tol_iris = 1.0 # 0.5 # 
-    tol_wine = 1.0 # 0.5 # 
+    tol_iris = 1.0 
+    tol_wine = 1.0 
 
     tols = [tol_iris, tol_wine]
 
@@ -312,7 +351,7 @@ if __name__ == '__main__':
         '''
         Trains, validates, and tests our Perceptron model for multi-class classification
         '''
-        # obtain dataset in correct shape (d x N)
+        # Obtain dataset in correct shape (d x N)
         x_train = np.transpose(x_train, axes=(1, 0))
         x_val = np.transpose(x_val, axes=(1, 0))
         x_test = np.transpose(x_test, axes=(1, 0))
