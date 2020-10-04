@@ -63,6 +63,22 @@ class PerceptronMultiClass(object):
         self.__weights = None
         self.__n_class = 3
 
+    def __concat_threshold_to_x(self, x):
+        '''
+        Concatenates the threshold to feature data x
+
+        Args:
+            x : numpy
+                d x N feature vector
+        Returns:
+            numpy
+                x+1 x N feature vector with threshold
+        '''
+        N = x.shape[1]
+        # Reshape x so that it includes the threshold in x_0
+        thresholds = 1.0/self.__n_class * np.ones([1, N])  # (1 x N)
+        return np.concatenate([thresholds, x], axis=0)  # (d+1 x N)
+
     def __update(self, x, y):
         '''
         Update the weight vector during each training iteration
@@ -75,9 +91,7 @@ class PerceptronMultiClass(object):
         '''
         N = x.shape[1]
 
-        # Reshape x so that it includes the threshold in x_0
-        thresholds = 1.0/self.__n_class * np.ones([1, N])  # (1 x N)
-        x = np.concatenate([thresholds, x], axis=0)  # (d+1 x N)
+        x = self.__concat_threshold_to_x(x)
             
         # For each of N data samples, check if our prediction is correct
         for n in range(N):
@@ -87,31 +101,14 @@ class PerceptronMultiClass(object):
             # The weights for the current class's hyperplane is in column c of self.__weights
             # we expand dims so that it's a 2D array in the shape (d+1 x 1) instead of a 1D array in the shape (d+1)
             weights_for_each_class = [np.expand_dims(self.__weights[:, c], axis=-1) for c in range(self.__n_class)]
-            # print("weights, are you even updating? {}".format(weights_for_each_class))
             prediction_confidence_scores = [np.matmul(weights_c.T, x_n) for weights_c in weights_for_each_class]
 
-            # predictions = np.zeros([self.__n_class])
-
-            # for c in range(self.__n_class):
-            #     weights_c = np.expand_dims(self.__weights[:, c], axis=-1)
-            #     predictions
-
-
-            # print("label confidence scores: {}".format(label_confidence_scores))
-
-            # Predict whether x_n is class c or not
             highest_confidence = max(prediction_confidence_scores)
             predicted_label = prediction_confidence_scores.index(highest_confidence)
 
             # If our prediction does not match the ground truth label, update weights
             groundtruth_label = y[n]
-            # print("groundtruth label was {}, we predicted {}".format(groundtruth_label, predicted_label))
-
             if predicted_label != groundtruth_label:
-                # print("WE PREDICTED WRONG! UPDATING WEIGHTS")
-                # print("self.__weights[:, predicted_label] SHAPE: {}".format(self.__weights[:, predicted_label].shape))
-                # print("weights_for_each_class[predicted_label].T SHAPE: {}".format(weights_for_each_class[predicted_label].T.shape))
-                # print("x_n SHAPE: {}".format(x_n.shape))
                 test = weights_for_each_class[predicted_label] - np.squeeze(x_n, axis=-1) 
                 self.__weights[:, predicted_label] = self.__weights[:, predicted_label] - np.squeeze(x_n, axis=-1) 
                 self.__weights[:, groundtruth_label] = self.__weights[:, groundtruth_label] + np.squeeze(x_n, axis=-1) 
@@ -179,10 +176,7 @@ class PerceptronMultiClass(object):
             numpy : 1 x N label vector
         '''
         N = x.shape[1]
-
-        # Reshape x to be (d+1 x N) where the first term in each sample is the threshold
-        threshold = 1/self.__n_class * np.ones([1, N])  # (1 x N)
-        x = np.concatenate([threshold, x], axis=0)  # (d+1 x N)
+        x = self.__concat_threshold_to_x(x)
 
         # label_confidence_scores = np.zeros([self.__n_class, N])  
 
@@ -228,9 +222,6 @@ class PerceptronMultiClass(object):
         '''
         # Predict labels for given samples using our hypothesis weights
         predictions = self.predict(x) # (1 x N) 
-        # print("SCORING!!!!!!!!!")
-        # print("predictions: {}".format(predictions))
-        # print("y: {}".format(y))
         scores = np.where(predictions == y, 1.0, 0.0)
         return np.mean(scores)
 
