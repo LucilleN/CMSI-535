@@ -103,6 +103,7 @@ class PerceptronMultiClass(object):
         self.__weights = None
         self.__n_class = 3
 
+
     def __concat_threshold_to_x(self, x):
         '''
         Concatenates the threshold to feature data x
@@ -118,6 +119,20 @@ class PerceptronMultiClass(object):
         # All the x_0's should be the threshold.
         thresholds = 1.0/self.__n_class * np.ones([1, N])  # (1 x N)
         return np.concatenate([thresholds, x], axis=0)  # (d+1 x N)
+
+
+    def __predict_single_label(self, x_n):
+        # The weights for class c's hyperplane is in column c of self.__weights
+        # Expand dims so that each weights_c is a 2D array in the shape (d+1 x 1) instead of a 1D array in the shape (d+1)
+        weights_for_each_class = [np.expand_dims(self.__weights[:, c], axis=-1) for c in range(self.__n_class)]
+        prediction_confidence_scores = [np.matmul(weights_c.T, x_n) for weights_c in weights_for_each_class]
+
+        # Our predicted class is the one that gives us the highest confidence
+        highest_confidence = max(prediction_confidence_scores)
+        predicted_label = prediction_confidence_scores.index(highest_confidence)
+
+        return predicted_label
+
 
     def __update(self, x, y):
         '''
@@ -138,14 +153,7 @@ class PerceptronMultiClass(object):
             # Extract the input feature values for the current sample, in the shape (d+1 x 1)
             x_n = np.expand_dims(x[:, n], axis=-1)
 
-            # The weights for class c's hyperplane is in column c of self.__weights
-            # Expand dims so that each weights_c is a 2D array in the shape (d+1 x 1) instead of a 1D array in the shape (d+1)
-            weights_for_each_class = [np.expand_dims(self.__weights[:, c], axis=-1) for c in range(self.__n_class)]
-            prediction_confidence_scores = [np.matmul(weights_c.T, x_n) for weights_c in weights_for_each_class]
-
-            # Our predicted class is the one that gives us the highest confidence
-            highest_confidence = max(prediction_confidence_scores)
-            predicted_label = prediction_confidence_scores.index(highest_confidence)
+            predicted_label = self.__predict_single_label(x_n)
 
             # If our prediction does not match the ground truth label, update weights for c_hat and c_star
             groundtruth_label = y[n]
@@ -187,9 +195,12 @@ class PerceptronMultiClass(object):
             predictions = self.predict(x)
             loss = np.mean(np.where(predictions != y, 1.0, 0.0))
 
-            # If we've minimized loss already, stop
+            # If loss has already reached 0, no need to keep going
             if loss == 0.0:
                 break
+            # Or if loss was lower at our last timestep and now we are getting worse (loss has 
+            # increased by more than our tolerance), then use the previous timestep's weights 
+            # as the best weights and stop
             elif loss > prev_loss + tol and t > 2:
                 self.__weights = prev_weights
                 break
@@ -219,19 +230,10 @@ class PerceptronMultiClass(object):
         for n in range(N):
             # Extract the input feature values for the current sample in the shape (d+1 x 1)
             x_n = np.expand_dims(x[:, n], axis=-1)
-
-            # The weights for class c's hyperplane is in column c of self.__weights
-            # Expand dims so that each weights_c is a 2D array in the shape (d+1 x 1) instead of a 1D array in the shape (d+1)
-            weights_for_each_class = [np.expand_dims(self.__weights[:, c], axis=-1) for c in range(self.__n_class)]
-            label_confidence_scores = [np.matmul(weights_c.T, x_n) for weights_c in weights_for_each_class]
-
-            # Prediction is the class that had the highest confidence
-            highest_confidence = max(label_confidence_scores)
-            predicted_label = label_confidence_scores.index(highest_confidence)
-
-            predictions[0, n] = predicted_label
+            predictions[0, n] = self.__predict_single_label(x_n)
         
         return predictions
+
 
     def score(self, x, y):
         '''
