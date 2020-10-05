@@ -263,7 +263,6 @@ if __name__ == '__main__':
         scores_r2_train.append(score_r2_poly_train)
 
         # Test model on validation set
-        predictions_poly_val = model_poly.predict(x_poly_val)
 
         score_mse_poly_val = skmetrics.mean_squared_error(
             predictions_poly_val, y_val)
