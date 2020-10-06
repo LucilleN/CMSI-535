@@ -86,7 +86,6 @@ class PolynomialFeatureExpansion(object):
 
         # Initialize the bias
         bias = np.ones([X.shape[0], 1])
-
         # Initialize polynomial expansion features Z
         # Z contains [x_0, x_1, x_2, ..., x_d]
         Z = [bias, X]
@@ -99,121 +98,62 @@ class PolynomialFeatureExpansion(object):
         # Split X into its d dimensions separately
         linear_features = np.split(X, indices_or_sections=X.shape[1], axis=1)
 
-        # Maintain a list of new polynomial features that we've accumulated
-        new_polynomial_features = []
-
-        # if self.__degree == 2:
-
-        # Let's consider the example x = (x_1, x_2)
-        # phi_2(x) = (x_0, x_1, x_2, x_1^2, x_1 x_2, x_2^2)
-
-        # # Maintain a list of new polynomial features that we've accumulated
-        # new_polynomial_features = []
-
-        # Keep track of the polynomial terms that we will keep
-        polynomial_terms = []
-
-        # For every linear feature
-        for l1 in range(len(linear_features)):
-
-            # Multiply it by every linear feature
-            for l2 in range(len(linear_features)):
-                # First iteration of outer loop
-                # 1. x_1 * x_1 = x_1^2
-                # 2. x_1 * x_2 = x_1 x_2
-                # Second iteration of outer loop
-                # 1. x_2 * x_1 = x_1 x_2 (discard based on condition, already exists)
-                # 2. x_2 * x_2 = x_2^2
-
-                polynomial_feature = linear_features[l1] * linear_features[l2]
-
-                # Check if we have already found the polynomial terms to keep
-                if len(self.__polynomial_terms) < self.__degree - 1:
-
-                    # If we have not, then iterate through the expansion
-                    keep_polynomial_term  = True
-
-                    # Check if we already have the feature created
-                    for feature in new_polynomial_features:
-                        if np.sum(polynomial_feature - feature) == 0.0:
-                            keep_polynomial_term = False
-                            break
-
-                    # Keep track of whether we keep or discard (True/False) the term
-                    polynomial_terms.append(keep_polynomial_term)
-
-                    if keep_polynomial_term:
-                        # And append the result to the new set of polynomial features
-                        new_polynomial_features.append(polynomial_feature)
-                else:
-                    # Check if the current polynomial term was kept
-                    keep_polynomial_term = self.__polynomial_terms[0][l1 * len(linear_features) + l2]
-
-                    if keep_polynomial_term:
-                        # And append the result to the new set of polynomial features
-                        new_polynomial_features.append(polynomial_feature)
-
-        # If we've never processed the polynomial terms before, save the list of terms to keep
-        if len(self.__polynomial_terms) < self.__degree - 1:
-            self.__polynomial_terms.append(polynomial_terms)
-
-        print("new_polynomial_features length: {}".format(len(new_polynomial_features)))
-        # Add the new polynomial features to Z
-        # Concatenates x_1^2, x_1 x_2, x_2^2 together into a matrix
-        # [x_1^2, x_1 x_2, x_2^2] of shape (N, 3)
-        Z.append(np.concatenate(new_polynomial_features, axis=1))
+        # accumulates features for the current p-order polynomial being generated in the following loop
+        new_polynomial_features = [] 
         
-        # all of the above was inside the if
+        # contains the complete features for the last p-order polynomial we had generated, 
+        # aka the p-1 order polynomial that we are multiplying by the linear features
+        # it starts as just the linear features 
+        current_polynomial_features = np.copy(linear_features) 
 
-        # # Concatenate every term into the feature vector (augmenting X with polynomial features)
-        # # Z becomes [x_0, x_1, x_2, x_1^2, x_1 x_2, x_2^2] of shape (N x 6)
-        # Z = np.concatenate(Z, axis=1)
+        # each loop of this for loop generates the polynomial of degree p
+        for p in range(2, self.__degree + 1):
 
-        # TODO: Implement the polynomial_expansion function for degree larger than 2
-        # Hint: (x_1 + x_2)^3 = (x_1 + x_2) * (x_1 + x_2) * (x_1 + x_2)
-        if self.__degree == 2:
-            # Concatenate every term into the feature vector (augmenting X with polynomial features)
-            # Z becomes [x_0, x_1, x_2, x_1^2, x_1 x_2, x_2^2] of shape (N x 6)
-            Z = np.concatenate(Z, axis=1)
-            return Z
+            # Keep track of the polynomial terms that we will keep
+            new_polynomial_terms_to_keep = []
 
-        for p in range(3, self.__degree + 1):
-            last_degree_polynomial_features = new_polynomial_features
-            last_degree_polynomials_kept = polynomial_terms
-            
-            new_polynomial_features = []
-            polynomial_terms = []
-
-            for p1 in range(len(last_degree_polynomial_features)):
+            # For every linear feature
+            for f1 in range(len(current_polynomial_features)):
 
                 # Multiply it by every linear feature
                 for l2 in range(len(linear_features)):
+                    # First iteration of outer loop
+                    # 1. x_1 * x_1 = x_1^2
+                    # 2. x_1 * x_2 = x_1 x_2
+                    # Second iteration of outer loop
+                    # 1. x_2 * x_1 = x_1 x_2 (discard based on condition, already exists)
+                    # 2. x_2 * x_2 = x_2^2
 
-                    polynomial_feature = last_degree_polynomial_features[p1] * linear_features[l2]
+                    polynomial_feature = current_polynomial_features[f1] * linear_features[l2]
 
                     # Check if we have already found the polynomial terms to keep
+                    # self.__polynomial_terms contains a list of lists, where each list contains booleans 
+                    # that indicate whether its correspnding term in the expansion should be kept
+                    # terms that are False should not be kept because they're repeated earlier in the expansion
                     if len(self.__polynomial_terms) < self.__degree - 1:
-                        # If we have not, then iterate through the expansion
+
+                        # If self.__polynomial_terms contains fewer lists than our degree-1, then 
+                        # that means we haven't figure out which terms to keep yet, so we need to
+                        # iterate through the expansion we've already created to see if it's in there
+                        # (if 3rd degree polynomial, then we need a list for 2nd degree and list for 3rd degree)
                         keep_polynomial_term  = True
+
                         # Check if we already have the feature created
                         for feature in new_polynomial_features:
                             if np.sum(polynomial_feature - feature) == 0.0:
                                 keep_polynomial_term = False
                                 break
+
                         # Keep track of whether we keep or discard (True/False) the term
-                        polynomial_terms.append(keep_polynomial_term)
+                        new_polynomial_terms_to_keep.append(keep_polynomial_term)
+
                         if keep_polynomial_term:
                             # And append the result to the new set of polynomial features
                             new_polynomial_features.append(polynomial_feature)
-                    
                     else:
                         # Check if the current polynomial term was kept
-                        # ???? ???????????????????
-                        print("self.__polynomial_terms length: {}".format(len(self.__polynomial_terms)))
-                        for i in range(len(self.__polynomial_terms)):
-                            print("element {} of self.__polynomial_terms has length: {}".format(i, len(self.__polynomial_terms[i])))
-                        print("trying to access index {}".format(p1 * len(last_degree_polynomial_features) + l2))
-                        keep_polynomial_term = self.__polynomial_terms[p-2][p1 * len(last_degree_polynomials_kept) + l2]
+                        # p - 2 because the first list in self.__polynomial_terms is for degree 2
+                        keep_polynomial_term = self.__polynomial_terms[p-2][f1 * len(linear_features) + l2]
 
                         if keep_polynomial_term:
                             # And append the result to the new set of polynomial features
@@ -221,17 +161,24 @@ class PolynomialFeatureExpansion(object):
 
             # If we've never processed the polynomial terms before, save the list of terms to keep
             if len(self.__polynomial_terms) < self.__degree - 1:
-                self.__polynomial_terms.append(polynomial_terms)
+                self.__polynomial_terms.append(new_polynomial_terms_to_keep)
 
             print("new_polynomial_features length: {}".format(len(new_polynomial_features)))
             # Add the new polynomial features to Z
             # Concatenates x_1^2, x_1 x_2, x_2^2 together into a matrix
             # [x_1^2, x_1 x_2, x_2^2] of shape (N, 3)
             Z.append(np.concatenate(new_polynomial_features, axis=1))
-        
-        Z = np.concatenate(Z, axis=1)
-        return Z
 
+            # update current_polynomial_features to be the newly created polynomial features so that the next
+            # iteration can use it to multiply with the linear features
+            current_polynomial_features = new_polynomial_features
+            new_polynomial_features = []
+
+        # Concatenate every term into the feature vector (augmenting X with polynomial features)
+        # Z becomes [x_0, x_1, x_2, x_1^2, x_1 x_2, x_2^2] of shape (N x 6)
+        Z = np.concatenate(Z, axis=1)
+
+        return Z
 
 def split_data(x, y):
     '''
