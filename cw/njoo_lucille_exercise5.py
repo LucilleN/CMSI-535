@@ -14,7 +14,20 @@ Collaborators: None
 Collaboration details: N/A
 
 Summary:
-Report your scores here. For example,
+In this exercise, we implemented a PolynomialFeatureExpansion class that we use to add polynomial
+features, up to some degree, to the given data, in order to do nonlinear mapping. This class performs 
+the feature expansion by multiplying the linear features by themselves, then multiplying the resulting 
+polynomial expansion by the linear features iteratively to generate polynomial features of increasing
+orders. These features get appended to the original data until we have created all the polynomial 
+features.
+
+In the main method, we then commpared our PolynomialFeatureExpansion class to sklearn's PolynomialFeatures 
+class by using both to create expanded data that we use to train, validate, and test an sklearn 
+LinearRegression model. We plotted the MSE and r-squared scores of the models on both sklearn's 
+PolynomialFeatures data and on our own PolynomialFeatureExpansion data, as a function of the degree 
+polynomial we expanded to. 
+
+Results:
 
 Results using scikit-learn LinearRegression model with linear features
 Training set mean squared error: 23.2560
@@ -45,12 +58,12 @@ Validation set r-squared scores: 0.8360
 Testing set mean squared error: 34.8401
 Testing set r-squared scores: 0.5539
 Results for LinearRegression model using our implementation of order-3 polynomial expansion features
-Training set mean squared error: 6.5635
-Training set r-squared scores: 0.9245
-Validation set mean squared error: 9.4650
-Validation set r-squared scores: 0.8650
-Testing set mean squared error: 27.7505
-Testing set r-squared scores: 0.6447
+Training set mean squared error: 0.0000
+Training set r-squared scores: 1.0000
+Validation set mean squared error: 168340.1784
+Validation set r-squared scores: -2400.4241
+Testing set mean squared error: 128662.1554
+Testing set r-squared scores: -1646.3980
 '''
 
 '''
@@ -67,7 +80,13 @@ class PolynomialFeatureExpansion(object):
         # Degree or order of polynomial we will expand to
         self.__degree = degree
 
-        # Polynomial terms that we will use based on the specified degree
+        # Polynomial terms that we will use based on the specified degree; this is a list of 
+        # lists, where each internal list contains booleans representing whether the corresponding 
+        # term of the polynomial expansion should be kept (if it is unique) or discarded (if it is 
+        # a repeat of a term that was already computed)
+        # Example: for degree 2:
+        #   x1^2, x1x2, x2x1, x2^2
+        #  [True, True, False, True]
         self.__polynomial_terms = []
 
     def transform(self, X):
@@ -98,24 +117,25 @@ class PolynomialFeatureExpansion(object):
         # Split X into its d dimensions separately
         linear_features = np.split(X, indices_or_sections=X.shape[1], axis=1)
 
-        # accumulates features for the current p-order polynomial being generated in the following loop
+        # Accumulates features for the new p-order polynomial being generated in the following loop
         new_polynomial_features = [] 
         
-        # contains the complete features for the last p-order polynomial we had generated, 
-        # aka the p-1 order polynomial that we are multiplying by the linear features
-        # it starts as just the linear features 
+        # Contains the complete features for the last p-order polynomial we had generated;
+        # this is the (p-1) order polynomial that we are multiplying by the linear features.
+        # We start it as a copy of just the linear features
         current_polynomial_features = np.copy(linear_features) 
 
-        # each loop of this for loop generates the polynomial of degree p
+        # Each loop of this for loop generates the polynomial of degree p
         for p in range(2, self.__degree + 1):
 
             # Keep track of the polynomial terms that we will keep
+            # This is a list of booleans that represents whether the corresponding term 
+            # is one we shoud keep (it's a new term) or discard (it's a repeat)
             new_polynomial_terms_to_keep = []
 
-            # For every linear feature
+            # Multiply every feature in the current polynomial by every feature in the linear data
             for f1 in range(len(current_polynomial_features)):
 
-                # Multiply it by every linear feature
                 for l2 in range(len(linear_features)):
                     # First iteration of outer loop
                     # 1. x_1 * x_1 = x_1^2
@@ -129,13 +149,12 @@ class PolynomialFeatureExpansion(object):
                     # Check if we have already found the polynomial terms to keep
                     # self.__polynomial_terms contains a list of lists, where each list contains booleans 
                     # that indicate whether its correspnding term in the expansion should be kept
-                    # terms that are False should not be kept because they're repeated earlier in the expansion
                     if len(self.__polynomial_terms) < self.__degree - 1:
 
-                        # If self.__polynomial_terms contains fewer lists than our degree-1, then 
-                        # that means we haven't figure out which terms to keep yet, so we need to
-                        # iterate through the expansion we've already created to see if it's in there
-                        # (if 3rd degree polynomial, then we need a list for 2nd degree and list for 3rd degree)
+                        # If self.__polynomial_terms contains fewer lists than our degree-1, then that means 
+                        # we haven't figured out which terms are repeats and which aren't yet, so we need to
+                        # iterate through the new polynomial we're creating to see if we generated it just now
+                        # (Ex: If 3rd degree polynomial, then we need a list for 2nd degree and list for 3rd degree)
                         keep_polynomial_term  = True
 
                         # Check if we already have the feature created
@@ -148,36 +167,33 @@ class PolynomialFeatureExpansion(object):
                         new_polynomial_terms_to_keep.append(keep_polynomial_term)
 
                         if keep_polynomial_term:
-                            # And append the result to the new set of polynomial features
+                            # If we do want to keep it, append the computed feature to the new set of polynomial features
                             new_polynomial_features.append(polynomial_feature)
-                        else:
-                            print("didnt keep this term")
                     else:
-                        # Check if the current polynomial term was kept
-                        # p - 2 because the first list in self.__polynomial_terms is for degree 2
+                        # If we got here, that means we already figured out which terms are repeated in this polynomial expansion
+                        # Check if the current polynomial term was kept by looking in self.__polynomial_terms for the right list
+                        # First index at (p-2) because the first list in self.__polynomial_terms is for degree 2
                         keep_polynomial_term = self.__polynomial_terms[p-2][f1 * len(linear_features) + l2]
 
                         if keep_polynomial_term:
                             # And append the result to the new set of polynomial features
                             new_polynomial_features.append(polynomial_feature)
-                        else:
-                            print("didnt keep this term")
 
             # If we've never processed the polynomial terms before, save the list of terms to keep
             if len(self.__polynomial_terms) < self.__degree - 1:
                 self.__polynomial_terms.append(new_polynomial_terms_to_keep)
 
-            print("new_polynomial_features length: {}".format(len(new_polynomial_features)))
             # Add the new polynomial features to Z
             # Concatenates x_1^2, x_1 x_2, x_2^2 together into a matrix
             # [x_1^2, x_1 x_2, x_2^2] of shape (N, 3)
             Z.append(np.concatenate(new_polynomial_features, axis=1))
 
-            # update current_polynomial_features to be the newly created polynomial features so that the next
-            # iteration can use it to multiply with the linear features
+            # Update current_polynomial_features to be the newly created polynomial features so that
+            # the next iteration can use it to multiply with the linear features
             current_polynomial_features = new_polynomial_features
             new_polynomial_features = []
 
+        # When we are totally done: 
         # Concatenate every term into the feature vector (augmenting X with polynomial features)
         # Z becomes [x_0, x_1, x_2, x_1^2, x_1 x_2, x_2^2] of shape (N x 6)
         Z = np.concatenate(Z, axis=1)
@@ -262,8 +278,6 @@ if __name__ == '__main__':
     y = boston_housing_data.target
 
     x_train, x_val, x_test, y_train, y_val, y_test = split_data(x, y)
-
-    print("x_train shape: {}".format(x_train.shape))
 
     '''
     Trains and tests linear regression from scikit-learn
