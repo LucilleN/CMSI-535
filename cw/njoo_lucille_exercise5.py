@@ -150,6 +150,8 @@ class PolynomialFeatureExpansion(object):
                         if keep_polynomial_term:
                             # And append the result to the new set of polynomial features
                             new_polynomial_features.append(polynomial_feature)
+                        else:
+                            print("didnt keep this term")
                     else:
                         # Check if the current polynomial term was kept
                         # p - 2 because the first list in self.__polynomial_terms is for degree 2
@@ -158,6 +160,8 @@ class PolynomialFeatureExpansion(object):
                         if keep_polynomial_term:
                             # And append the result to the new set of polynomial features
                             new_polynomial_features.append(polynomial_feature)
+                        else:
+                            print("didnt keep this term")
 
             # If we've never processed the polynomial terms before, save the list of terms to keep
             if len(self.__polynomial_terms) < self.__degree - 1:
@@ -258,6 +262,8 @@ if __name__ == '__main__':
     y = boston_housing_data.target
 
     x_train, x_val, x_test, y_train, y_val, y_test = split_data(x, y)
+
+    print("x_train shape: {}".format(x_train.shape))
 
     '''
     Trains and tests linear regression from scikit-learn
