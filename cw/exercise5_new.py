@@ -269,6 +269,7 @@ class PolynomialFeatureExpansion(object):
 
         return Z
 
+
 def score_model_on_data(model, x, y):
     '''
     Returns MSE and r-squared scores of model evaluated on any arbitrary 
@@ -286,6 +287,7 @@ def score_model_on_data(model, x, y):
     score_r2 = model.score(x, y)
     return (score_mse, score_r2)
     
+
 def split_data(x, y):
     '''
     Splits raw data x and y into training, validation, and testing sets, using an 
@@ -312,6 +314,49 @@ def split_data(x, y):
     x_train, x_val, x_test = x[train_idx, :], x[val_idx, :], x[test_idx, :]
     y_train, y_val, y_test = y[train_idx], y[val_idx], y[test_idx]
     return (x_train, x_val, x_test, y_train, y_val, y_test)
+
+
+def clip_scores(scores):
+    '''
+    Helper function that prepares the score numpy arrays for plotting by
+    clipping the MSE values between 0 and 50 and clipping the R2 values 
+    between 0 and 1. 
+    
+    Args:
+        scores: a dictionary containing two dictionaries, one for the 
+                numpy arrays of MSE scores and another for the numpy
+                arrays of R2 scores.
+    '''
+    # Clip each set of MSE scores between 0 and 50
+    for test_set in scores["mse"]:
+        scores["mse"][test_set] = np.clip(scores["mse"][test_set], 0.0, 50.0)
+    # Clip each set of R-squared scores between 0 and 1
+    for test_set in scores["r2"]:
+        scores["mse"][test_set] = np.clip(scores["mse"][test_set], 0.0, 50.0)
+
+
+def set_up_subplot(ax, scores, score_type):
+    n_experiments = len(scores[score_type]["train"])
+    x_values = [range(1, n_experiments + 1)] * n_experiments
+    y_values = scores[score_type].values()
+    labels = ['Training', 'Validation', 'Testing']
+    colors = ['blue', 'red', 'green']
+    # Plot MSE or R2 scores for training, validation, testing sets
+    for x, y, label, color in zip(x_values, y_values, labels, colors):
+        ax.plot(x, y, marker='o', color=color, label=label)
+        ax.legend(loc='best')
+    ax.set_xlim([0.0, n_experiments + 1])
+    if score_type == "mse":
+        ax.set_ylim([0.0, 50.0])
+    elif score_type == "r2":
+        ax.set_ylim([0.0, 1.0])
+    else: 
+        raise ValueError("Unexpected score_type")
+    # Set y label to 'MSE' or 'R2' depending on score_type
+    ax.set_ylabel(score_type.upper())
+    # Set x label to 'p-degree'
+    ax.set_xlabel('p-degree')
+
 
 if __name__ == '__main__':
 
@@ -391,95 +436,95 @@ if __name__ == '__main__':
 
         # Initialize scikit-learn linear regression model
         model_poly = LinearRegression()
-
-        # TODO: Trains scikit-learn linear regression model using p-order polynomial expansion
+        # Trains scikit-learn linear regression model using p-order polynomial expansion
         print('Features after polynomial transform order-{}: {}'.format(degree, x_poly_train.shape[1]))
         model_poly.fit(x_poly_train, y_train)
 
-        # TODO: Test model on training set
-        predictions_poly_train = model_poly.predict(x_poly_train)
-
-        score_mse_poly_train = skmetrics.mean_squared_error(predictions_poly_train, y_train)
-        print('Training set mean squared error: {:.4f}'.format(score_mse_poly_train))
-
-        score_r2_poly_train = model_poly.score(x_poly_train, y_train)
-        print('Training set r-squared scores: {:.4f}'.format(score_r2_poly_train))
-
-        # TODO: Save MSE and R-square scores on training set
+        # Test model on training set and save MSE and R-square scores
+        score_mse_poly_train, score_r2_poly_train = score_model_on_data(model_poly, x_poly_train, y_train)
         scores_mse_train.append(score_mse_poly_train)
         scores_r2_train.append(score_r2_poly_train)
+        print('Training set mean squared error: {:.4f}'.format(score_mse_poly_train))
+        print('Training set r-squared scores: {:.4f}'.format(score_r2_poly_train))
 
-        # TODO: Test model on validation set
-        predictions_poly_val = model_poly.predict(x_poly_val)
-
-        score_mse_poly_val = skmetrics.mean_squared_error(predictions_poly_val, y_val)
-        print('Validation set mean squared error: {:.4f}'.format(score_mse_poly_val))
-
-        score_r2_poly_val = model_poly.score(x_poly_val, y_val)
-        print('Validation set r-squared scores: {:.4f}'.format(score_r2_poly_val))
-
-        # TODO: Save MSE and R-square scores on validation set
+        # Test model on validation set and save MSE and R-square scores
+        score_mse_poly_val, score_r2_poly_val = score_model_on_data(model_poly, x_poly_val, y_val)
         scores_mse_val.append(score_mse_poly_val)
         scores_r2_val.append(score_r2_poly_val)
+        print('Validation set mean squared error: {:.4f}'.format(score_mse_poly_val))
+        print('Validation set r-squared scores: {:.4f}'.format(score_r2_poly_val))
 
-        # TODO: Test model on testing set
-        predictions_poly_test = model_poly.predict(x_poly_test)
-
-        score_mse_poly_test = skmetrics.mean_squared_error(predictions_poly_test, y_test)
-        print('Testing set mean squared error: {:.4f}'.format(score_mse_poly_test))
-
-        score_r2_poly_test = model_poly.score(x_poly_test, y_test)
-        print('Testing set r-squared scores: {:.4f}'.format(score_r2_poly_test))
-
-        # TODO: Save MSE and R-square scores on testing set
+        # Test model on testing set and save MSE and R-square scores
+        score_mse_poly_test, score_r2_poly_test = score_model_on_data(model_poly, x_poly_test, y_test)
         scores_mse_test.append(score_mse_poly_test)
         scores_r2_test.append(score_r2_poly_test)
+        print('Testing set mean squared error: {:.4f}'.format(score_mse_poly_test))
+        print('Testing set r-squared scores: {:.4f}'.format(score_r2_poly_test))
 
     # TODO: Convert each scores to NumPy arrays
-    scores_mse_train = np.array(scores_mse_train)
-    scores_mse_val = np.array(scores_mse_val)
-    scores_mse_test = np.array(scores_mse_test)
-    scores_r2_train = np.array(scores_r2_train)
-    scores_r2_val = np.array(scores_r2_val)
-    scores_r2_test = np.array(scores_r2_test)
+    scores = {
+        "mse": {
+            "train": np.array(scores_mse_train),
+            "val": np.array(scores_mse_val),
+            "test": np.array(scores_mse_test)
+        },
+        "r2": {
+            "train": np.array(scores_r2_train),
+            "val": np.array(scores_r2_val),
+            "test": np.array(scores_r2_test)
+        }
+    }
+    clip_scores(scores)
 
-    # TODO: Clip each set of MSE scores between 0 and 50
-    scores_mse_train = np.clip(scores_mse_train, 0.0, 50.0)
-    scores_mse_val = np.clip(scores_mse_val, 0.0, 50.0)
-    scores_mse_test = np.clip(scores_mse_test, 0.0, 50.0)
 
-    # TODO: Clip each set of R-squared scores between 0 and 1
-    scores_r2_train = np.clip(scores_r2_train, 0.0, 1.0)
-    scores_r2_val = np.clip(scores_r2_val, 0.0, 1.0)
-    scores_r2_test = np.clip(scores_r2_test, 0.0, 1.0)
+    # scores_mse_train = np.array(scores_mse_train)
+    # scores_mse_val = np.array(scores_mse_val)
+    # scores_mse_test = np.array(scores_mse_test)
+    # scores_r2_train = np.array(scores_r2_train)
+    # scores_r2_val = np.array(scores_r2_val)
+    # scores_r2_test = np.array(scores_r2_test)
 
-    n_experiments = len(scores_mse_train)
+    # scores_mse_train = np.clip(scores_mse_train, 0.0, 50.0)
+    # scores_mse_val = np.clip(scores_mse_val, 0.0, 50.0)
+    # scores_mse_test = np.clip(scores_mse_test, 0.0, 50.0)
 
-    # TODO: Create figure for training, validation and testing scores for different features
+    # scores_r2_train = np.clip(scores_r2_train, 0.0, 1.0)
+    # scores_r2_val = np.clip(scores_r2_val, 0.0, 1.0)
+    # scores_r2_test = np.clip(scores_r2_test, 0.0, 1.0)
+
+    # n_experiments = len(scores_mse_train)
+    # n_experiments = len(scores["mse"]["train"])
+
+    # Create figure for training, validation and testing scores for different features
     fig = plt.figure()
 
-    # TODO: Create subplot for MSE for training, validation, testing
+
+
+    # Create subplot for MSE for training, validation, testing
+    # 1 row, 2 columns, and get 1st subplot in the figure
     ax = fig.add_subplot(1, 2, 1)
+    # x_values = [range(1, n_experiments + 1)] * n_experiments
+    # # y_values = [scores_mse_train, scores_mse_val, scores_mse_test]
+    # y_values = [scores["mse"].values()]
+    # labels = ['Training', 'Validation', 'Testing']
+    # colors = ['blue', 'red', 'green']
 
-    x_values = [range(1, n_experiments + 1)] * n_experiments
-    y_values = [scores_mse_train, scores_mse_val, scores_mse_test]
-    labels = ['Training', 'Validation', 'Testing']
-    colors = ['blue', 'red', 'green']
+    # # Plot MSE scores for training, validation, testing sets
+    # for x, y, label, color in zip(x_values, y_values, labels, colors):
+    #     ax.plot(x, y, marker='o', color=color, label=label)
+    #     ax.legend(loc='best')
 
-    # TODO: Plot MSE scores for training, validation, testing sets
-    for x, y, label, color in zip(x_values, y_values, labels, colors):
-        ax.plot(x, y, marker='o', color=color, label=label)
-        ax.legend(loc='best')
+    # # TODO: Set y limits between 0 and 50, set x limits to 0 to number experiments + 1
+    # ax.set_ylim([0.0, 50.0])
+    # ax.set_xlim([0.0, n_experiments + 1])
 
-    # TODO: Set y limits between 0 and 50, set x limits to 0 to number experiments + 1
-    ax.set_ylim([0.0, 50.0])
-    ax.set_xlim([0.0, n_experiments + 1])
-
-    # TODO: Set y label to 'MSE', set x label to 'p-degree'
-    ax.set_ylabel('MSE')
-    ax.set_xlabel('p-degree')
+    # # TODO: Set y label to 'MSE', set x label to 'p-degree'
+    # ax.set_ylabel('MSE')
+    # ax.set_xlabel('p-degree')
+    set_up_subplot(ax, scores, 'mse')
 
     # TODO: Create subplot for R-square for training, validation, testing
+
 
     x_values = [[0], [0], [0]]
     y_values = [[0], [0], [0]]
