@@ -341,49 +341,30 @@ if __name__ == '__main__':
 
     # Trains scikit-learn linear regression model
     model.fit(x_train, y_train)
-
     print('Results using scikit-learn LinearRegression model with linear features')
 
-    # Test model on training set
-    predictions_train = model.predict(x_train)
-
-    score_mse_train = skmetrics.mean_squared_error(predictions_train, y_train)
-    print('Training set mean squared error: {:.4f}'.format(score_mse_train))
-
-    score_r2_train = model.score(x_train, y_train)
-    print('Training set r-squared scores: {:.4f}'.format(score_r2_train))
-
-    # TODO: Save MSE and R-square scores on training set
+    # Test model on training set and save MSE and R-square scores
+    score_mse_train, score_r2_train = score_model_on_data(model, x_train, y_train)
     scores_mse_train.append(score_mse_train)
     scores_r2_train.append(score_r2_train)
+    print('Training set mean squared error: {:.4f}'.format(score_mse_train))
+    print('Training set r-squared scores: {:.4f}'.format(score_r2_train))
 
-    # Test model on validation set
-    predictions_val = model.predict(x_val)
-
-    score_mse_val = skmetrics.mean_squared_error(predictions_val, y_val)
-    print('Validation set mean squared error: {:.4f}'.format(score_mse_val))
-
-    score_r2_val = model.score(x_val, y_val)
-    print('Validation set r-squared scores: {:.4f}'.format(score_r2_val))
-
-    # TODO: Save MSE and R-square scores on validation set
+    # Test model on validation set and save MSE and R-square scores
+    score_mse_val, score_r2_val = score_model_on_data(model, x_val, y_val)
     scores_mse_val.append(score_mse_val)
     scores_r2_val.append(score_r2_val)
+    print('Validation set mean squared error: {:.4f}'.format(score_mse_val))
+    print('Validation set r-squared scores: {:.4f}'.format(score_r2_val))
 
-    # Test model on testing set
-    predictions_test = model.predict(x_test)
-
-    score_mse_test = skmetrics.mean_squared_error(predictions_test, y_test)
-    print('Testing set mean squared error: {:.4f}'.format(score_mse_test))
-
-    score_r2_test = model.score(x_test, y_test)
-    print('Testing set r-squared scores: {:.4f}'.format(score_r2_test))
-
-    # TODO: Save MSE and R-square scores on testing set
+    # Test model on testing set and save MSE and R-square scores
+    score_mse_test, score_r2_test = score_model_on_data(model, x_test, y_test)
     scores_mse_test.append(score_mse_test)
     scores_r2_test.append(score_r2_test)
+    print('Testing set mean squared error: {:.4f}'.format(score_mse_test))
+    print('Testing set r-squared scores: {:.4f}'.format(score_r2_test))
 
-    # TODO: Set the degrees/orders of polynomials to be 2 and 3 for nonlinear mapping
+    # Set the degrees/orders of polynomials to be 2 and 3 for nonlinear mapping
     degrees_polynomial = [2, 3]
 
     '''
@@ -393,7 +374,7 @@ if __name__ == '__main__':
 
         print('Results of LinearRegression model using scikit-learn order-{} polynomial expansion features'.format(degree))
 
-        # TODO: Initialize polynomial expansion
+        # Initialize polynomial expansion
         poly_transform = skpreprocess.PolynomialFeatures(degree=degree)
 
         # TODO: Compute the polynomial terms needed for the data
@@ -451,8 +432,8 @@ if __name__ == '__main__':
         print('Testing set r-squared scores: {:.4f}'.format(score_r2_poly_test))
 
         # TODO: Save MSE and R-square scores on testing set
-        scores_mse_test.append(score_mse_test)
-        scores_r2_test.append(score_r2_test)
+        scores_mse_test.append(score_mse_poly_test)
+        scores_r2_test.append(score_r2_poly_test)
 
     # TODO: Convert each scores to NumPy arrays
     scores_mse_train = np.array(scores_mse_train)
