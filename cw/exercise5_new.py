@@ -7,28 +7,63 @@ from matplotlib import pyplot as plt
 
 
 '''
-Name: Doe, John (Please write names in <Last Name, First Name> format)
+Name: Njoo, Lucille
 
-Collaborators: Doe, Jane (Please write names in <Last Name, First Name> format)
+Collaborators: N/A
 
-Collaboration details: Discussed <function name> implementation details with Jane Doe.
+Collaboration details: N/A
 
 Summary:
 
-TODO:
 (1) Summarize the polynomial feature expansion algorithm for non-linear mapping.
 
+We start with some d features in X, which we can denote with (x_1, ... , x_d). Our goal is 
+to generate our expanded features Z, which will contain a total of D features. 
+- First, we add a bias term x_0, which we set to 1. When we augment this bias to X, this 
+  makes Z now contain (x_0, x_1, ... , x_d).
+- Next, we augment new polynomial terms up to order p by iteratively generating increasing 
+  polynomial degrees, augmenting them to Z, and multiplying these polynomials by the linear 
+  features until we have reached degree p. To generate these terms, we do the following:
+    - We initialize a variable to hold onto the current polynomial; it starts as simply the 
+      linear features. 
+    - For every degree up to p, the degree we want to expand to:
+        - We multiply every term in the current polynomial by every term in the linear 
+          features. Each one of these terms is one new polynomial feature. If the newly 
+          generated feature is not unique, i.e. it is a repeat of a feature that we've 
+          already computed, we ignore it; otherwise, we keep it.
+        - We augment all the new polynomial features we generated to our growing matrix of 
+          features.
+        - We update the current polynomial to be the polynomial we just generated.
+- Once we have added all the new polynomial features, we return Z, which now looks like: 
+  (x_0, x_1, ... , x_d, x_1^p, ... x_d^p).
+        
+
 (2) Why do we use this algorithm?
-We use this algorithm in order to create a nonlinear mapping for linear features
+
+We use the polynomial feature expansion algorithm in order to create a more complex 
+hypothesis so that we can better fit to data that is not linearly separable. When we have 
+data that is not linearly separable, we cannot use a linear hyperplane to separate the data 
+well using only the original d features, so we use nonlinear features to create a nonlinear 
+hypothesis function. The polynomial feature expansion algorithm is used to generate these 
+additional nonlinear features by computing every unique product of features up to some 
+polynomial degree p. In other words, this algorithm computes all the terms in the nonlinear 
+mapping function Z = phi_p(x). We can then train our model on the D new, higher-order, 
+higher-dimensional features. 
 
 (3) What negative learning phenonmenon is this algorithm prone to, and why does it happen?
-This algorithm is prone to overfitting, which is 
-This happens because producing so many extra features gives too many degrees of freedom
-more features than number of data points --> more variables than number of constraints
-this means that we can create an overly complex function that fits to not just the
-data but also the noise 
 
-TODO: Report your scores here. For example,
+This algorithm is prone to overfitting, which causes our training loss to be very small but 
+our testing loss to be very large. Overfitting happens easily with nonlinear mapping 
+because producing so many extra features results in too many degrees of freedom; if we end 
+up with more features than number of data points, this means there are more variables than 
+the number of constraints. Since our model tries to minimize loss, it uses its full 
+capacity, and as a result, we can create an overly complex function that fits to not just 
+the data, but also to the noise, and thus is not a good representation of the true 
+function. Such a model will be very accurate on the training data, but it will fail to 
+generalize to unseen data during testing. 
+
+
+Report your scores here:
 
 Results using scikit-learn LinearRegression model with linear features
 Training set mean squared error: 23.2560
@@ -37,34 +72,38 @@ Validation set mean squared error: 17.6111
 Validation set r-squared scores: 0.7488
 Testing set mean squared error: 17.1465
 Testing set r-squared scores: 0.7805
-Results of LinearRegression model using scikit-learn order-0 polynomial expansion features
+Results of LinearRegression model using scikit-learn order-2 polynomial expansion features
+Features after polynomial transform order-2: 105
+Training set mean squared error: 8.8948
+Training set r-squared scores: 0.8976
+Validation set mean squared error: 11.4985
+Validation set r-squared scores: 0.8360
+Testing set mean squared error: 34.8401
+Testing set r-squared scores: 0.5539
+Results of LinearRegression model using scikit-learn order-3 polynomial expansion features
+Features after polynomial transform order-3: 560
 Training set mean squared error: 0.0000
-Training set r-squared scores: 0.0000
-Validation set mean squared error: 0.0000
-Validation set r-squared scores: 0.0000
-Testing set mean squared error: 0.0000
-Testing set r-squared scores: 0.0000
-Results of LinearRegression model using scikit-learn order-0 polynomial expansion features
+Training set r-squared scores: 1.0000
+Validation set mean squared error: 131227.1239
+Validation set r-squared scores: -1870.9951
+Testing set mean squared error: 119705.3692
+Testing set r-squared scores: -1531.7148
+Results for LinearRegression model using our implementation of order-2 polynomial expansion features
+Features after polynomial transform order-2: 105
+Training set mean squared error: 8.8948
+Training set r-squared scores: 0.8976
+Validation set mean squared error: 11.4985
+Validation set r-squared scores: 0.8360
+Testing set mean squared error: 34.8401
+Testing set r-squared scores: 0.5539
+Results for LinearRegression model using our implementation of order-3 polynomial expansion features
+Features after polynomial transform order-3: 560
 Training set mean squared error: 0.0000
-Training set r-squared scores: 0.0000
-Validation set mean squared error: 0.0000
-Validation set r-squared scores: 0.0000
-Testing set mean squared error: 0.0000
-Testing set r-squared scores: 0.0000
-Results for LinearRegression model using our implementation of order-0 polynomial expansion features
-Training set mean squared error: 0.0000
-Training set r-squared scores: 0.0000
-Validation set mean squared error: 0.0000
-Validation set r-squared scores: 0.0000
-Testing set mean squared error: 0.0000
-Testing set r-squared scores: 0.0000
-Results for LinearRegression model using our implementation of order-0 polynomial expansion features
-Training set mean squared error: 0.0000
-Training set r-squared scores: 0.0000
-Validation set mean squared error: 0.0000
-Validation set r-squared scores: 0.0000
-Testing set mean squared error: 0.0000
-Testing set r-squared scores: 0.0000
+Training set r-squared scores: 1.0000
+Validation set mean squared error: 131094.5347
+Validation set r-squared scores: -1869.1036
+Testing set mean squared error: 119633.3746
+Testing set r-squared scores: -1530.7930
 '''
 
 '''
@@ -107,11 +146,17 @@ class PolynomialFeatureExpansion(object):
         '''
 
         # Initialize the bias
-        # TODO: What is the shape of bias and why do we select this shape?
+        # Q: What is the shape of bias and why do we select this shape?
+        # A: The bias is of shape (N x 1) because we want to add one new feature (our x_0 
+        #    term) to the features for each of the N data samples, so we want N rows each with 
+        #    1 column. 
         bias = np.ones([X.shape[0], 1])
 
         # Initialize polynomial expansion features Z
-        # TODO: Suppose x = [x1, x2], what terms are in Z?
+        # Q: Suppose x = [x1, x2], what terms are in Z?
+        # A: Z now contains [x0, X].
+        #    Technically, Z is still a list of lists because we haven't concatenated everything 
+        #    together yet, so at the moment Z looks like: [[x0], [x1, x2]]. 
         Z = [bias, X]
 
         # If degree is less than 2, then return the original features
@@ -135,9 +180,14 @@ class PolynomialFeatureExpansion(object):
                 # Multiply it by every linear feature
                 for l2 in range(len(linear_features)):
 
-                    # TODO: Suppose x = [x_1, x_2]
-                    # write the polynomial terms after each iteration
-                    # for 2nd order polynomial
+                    # Q: Suppose x = [x_1, x_2]
+                    #    write the polynomial terms after each iteration
+                    #    for 2nd order polynomial
+                    # A: Iteration:      New polynomial term:
+                    #     l1=0, l2=0:     x1 x1 = x1^2
+                    #     l1=0, l2=1:     x1 x2 = x1x2
+                    #     l1=1, l2=0:     x2 x1 = x2x1
+                    #     l1=1, l2=1:     x2 x2 = x2^2
 
                     polynomial_feature = linear_features[l1] * linear_features[l2]
 
@@ -205,10 +255,21 @@ class PolynomialFeatureExpansion(object):
                     # Multiply it by every linear feature
                     for l in range(len(linear_features)):
 
-                        # TODO: Suppose x = [x_1, x_2]
-                        # write the polynomial terms after each iteration
-                        # for 3rd order polynomial
-
+                        # Q: Suppose x = [x_1, x_2]
+                        #    write the polynomial terms after each iteration
+                        #    for 3rd order polynomial
+                        # A: Iteration:      New polynomial term:
+                        #     d=0, p=0, l=0:     x1 x1 = x1^2
+                        #     d=0, p=0, l=1:     x1 x2 = x1x2
+                        #     d=0, p=1, l=0:     x2 x1 = x2x1
+                        #     d=0, p=1, l=1:     x2 x2 = x2^2
+                        #     d=1, p=0, l=0:     x1^2 x1 = x1^3
+                        #     d=1, p=0, l=1:     x1^2 x2 = x1^2x2
+                        #     d=1, p=1, l=0:     x1x2 x1 = x1^2x2
+                        #     d=1, p=1, l=1:     x1x2 x2 = x1x2^2
+                        #     d=1, p=2, l=0:     x2^2 x1 = x1x2^2
+                        #     d=1, p=2, l=1:     x2^2 x2 = x2^3
+                        
                         polynomial_feature = current_polynomial_features[p] * linear_features[l]
 
                         # Check if we have already found the polynomial terms to keep
@@ -238,10 +299,32 @@ class PolynomialFeatureExpansion(object):
                         else:
                             # Check if the current polynomial term was kept
                             # p * len(linear_features) + l indexes into the term we are creating
-                            # TODO: What is d referring to?
+                            # Q: What is d referring to?
+                            # A: d refers to (the current polynomial expansion degree - 2); we 
+                            #    use it to index into self.__polynomial_terms because self.
+                            #    __polynomial_terms is a list of lists, where the inner lists 
+                            #    represent which terms of the polynomial expansion are unique 
+                            #    and thus should be kept, and which ones are repeats and thus 
+                            #    shouldn't be kept. Since d starts at 0 and goes up to (self.
+                            #    __degree - 1), and d=0 generates the degree-2 polynomial, that 
+                            #    means that self.__polynomial_terms at index 0 will give us the 
+                            #    list of booleans for degree 2; index 1 will give us the list 
+                            #    of booleans at index 3; etc.
 
-                            # TODO: For third degree expansion of x = [x1, x2],
-                            # What terms are we indexing to if we just use p * len(linear_features) instead?
+                            # Q: For third degree expansion of x = [x1, x2],
+                            #    What terms are we indexing to if we just use p * len
+                            #    (linear_features) instead?
+                            # A: If we index to (p * len(linear_features)), we end up at the 
+                            #    boolean that corresponds to the term produced by (the 
+                            #    current pth-term of the polynomial * the first linear feature, 
+                            #    x1). So if we're expanding to degree 3, these are the 
+                            #    corresponding terms we'd end up at if we indexed to (p* len
+                            #    (linear_features)):
+                            #       d=0, p=0: x1 * x1 = x1^2
+                            #       d=0, p=1: x2 * x1 = x1x2
+                            #       d=1, p=0: x1^2 * x1 = x1^3
+                            #       d=1, p=1: x1x2 * x1 = x1^2x2
+                            #       d=1, p=2: x2^2 * x1 = x1x2^2
 
                             keep_polynomial_term = self.__polynomial_terms[d][p * len(linear_features) + l]
 
@@ -254,12 +337,27 @@ class PolynomialFeatureExpansion(object):
                     self.__polynomial_terms.append(polynomial_terms)
 
                 # Add the new polynomial features to Z
-                # TODO: Why do we concatenate along the 1st axis?
-
+                # Q: Why do we concatenate along the 1st axis?
+                # A: We concatenate along the 1st axis because we want to create a matrix with 
+                #    N rows and len(new_polynomial_features) columns. Each new 
+                #    polynomial_feature is a vector of N elements containing the values of that 
+                #    feature for all N data points. We collect all our new polynomial_features 
+                #    into the list of new_polynomial features, and we want to concatenate all 
+                #    of them together so that there are N rows for each of the N data points, 
+                #    and each row contains the new features for that data point, which means we 
+                #    need to concatenate along the features axis, or axis=1. We want this shape 
+                #    because at the very end we will be concatenating all the elements of Z 
+                #    together, and Z needs to be in the shape (N x D), so we want the matrices 
+                #    for each polynomial expansion to have N rows.  
+                
                 Z.append(np.concatenate(new_polynomial_features, axis=1))
 
-                # TODO: For 3rd order polynomial expansion, what does Z contain after
-                # each iteration of the outer for loop (d)
+                # Q: For 3rd order polynomial expansion, what does Z contain after
+                #    each iteration of the outer for loop (d)
+                # A: For a 3rd order polynomial expansion, we will have two loops where d=0 and 
+                #    then d=1:
+                #      d=0: Z=[[x0], [x1, x2], [x1^2, x1x2, x2^2]]
+                #      d=1: Z=[[x0], [x1, x2], [x1^2, x1x2, x2^2], [x1^3, x1^2x2, x1x2^2, x2^3]]
 
                 # Set the new polynomial features to curren polynomial features and repeat
                 current_polynomial_features = new_polynomial_features
@@ -323,9 +421,9 @@ def clip_scores(scores):
     between 0 and 1. 
     
     Args:
-        scores: a dictionary containing two dictionaries, one for the 
-                numpy arrays of MSE scores and another for the numpy
-                arrays of R2 scores.
+        scores: dict
+            a dictionary containing two dictionaries, one for the numpy arrays of MSE scores 
+            and another for the numpy arrays of R2 scores.
     '''
     # Clip each set of MSE scores between 0 and 50
     for test_set in scores["mse"]:
@@ -333,11 +431,22 @@ def clip_scores(scores):
     # Clip each set of R-squared scores between 0 and 1
     for test_set in scores["r2"]:
         scores["r2"][test_set] = np.clip(scores["r2"][test_set], 0.0, 50.0)
-        
-    print("R2 scores clipped to: {}".format(scores["r2"]))
 
 
 def set_up_subplot(ax, scores, score_type):
+    '''
+    Helper function that plots the given array of training, validation, and testing scores on the given subplot. This function takes care of setting limits on and labeling the axes.
+
+    Args:
+        ax: matplotlib.axes.SubplotBase object
+            the matplotlib subplot on which we will plot our points
+        scores: dict
+            a dictionary containing two dictionaries, one for the numpy arrays of MSE scores 
+            and another for the numpy arrays of R2 scores.
+        score_type: string
+            either 'mse' or 'r2'; this determines how we limit the y-axis and how we 
+            label the graph 
+    '''
     n_experiments = len(scores[score_type]["train"])
     x_values = [range(1, n_experiments + 1)] * n_experiments
     y_values = scores[score_type].values()
@@ -347,18 +456,20 @@ def set_up_subplot(ax, scores, score_type):
     for x, y, label, color in zip(x_values, y_values, labels, colors):
         ax.plot(x, y, marker='o', color=color, label=label)
         ax.legend(loc='best')
+    # Set x limits to 0 to number experiments + 1    
     ax.set_xlim([0.0, n_experiments + 1])
+    # Set y limits between 0 and 50 for MSE, or between 0 and 1 for R2
     if score_type == "mse":
         ax.set_ylim([0.0, 50.0])
     elif score_type == "r2":
         ax.set_ylim([0.0, 1.0])
     else: 
         raise ValueError("Unexpected score_type")
-    # Set y label to 'MSE' or 'R2' depending on score_type
-    y_label = 'MSE' if score_type == 'mse' else 'R-squared'
-    ax.set_ylabel(y_label)
     # Set x label to 'p-degree' for both types of graphs
     ax.set_xlabel('p-degree')
+    # Set y label to 'MSE' or 'R-squared' depending on score_type
+    y_label = 'MSE' if score_type == 'mse' else 'R-squared'
+    ax.set_ylabel(y_label)
 
 
 if __name__ == '__main__':
@@ -425,11 +536,11 @@ if __name__ == '__main__':
         # Initialize polynomial expansion
         poly_transform = skpreprocess.PolynomialFeatures(degree=degree)
 
-        # TODO: Compute the polynomial terms needed for the data
+        # Compute the polynomial terms needed for the data
         # Generates x_1^2, x_1 x_2, x_1 x_3, ..., x_d^2
         poly_transform.fit(x_train)
 
-        # TODO: Transform the data by nonlinear mapping
+        # Transform the data by nonlinear mapping
         # Applies all the polynomial terms to the data and augments it to x
         # Computes the values for x_0, x_1, x_2, ..., x_1^2, x_1 x_2, ... x_d^2
         # x_1 = 2, x_2 = 4 : x -> (1, 2, 4, ..., 4, 8, ..., x_d^2)
@@ -464,7 +575,7 @@ if __name__ == '__main__':
         print('Testing set mean squared error: {:.4f}'.format(score_mse_poly_test))
         print('Testing set r-squared scores: {:.4f}'.format(score_r2_poly_test))
 
-    # TODO: Convert each scores to NumPy arrays
+    # Convert each scores to NumPy arrays
     scores = {
         "mse": {
             "train": np.array(scores_mse_train),
@@ -479,167 +590,92 @@ if __name__ == '__main__':
     }
     clip_scores(scores)
 
-
-    # scores_mse_train = np.array(scores_mse_train)
-    # scores_mse_val = np.array(scores_mse_val)
-    # scores_mse_test = np.array(scores_mse_test)
-    # scores_r2_train = np.array(scores_r2_train)
-    # scores_r2_val = np.array(scores_r2_val)
-    # scores_r2_test = np.array(scores_r2_test)
-
-    # scores_mse_train = np.clip(scores_mse_train, 0.0, 50.0)
-    # scores_mse_val = np.clip(scores_mse_val, 0.0, 50.0)
-    # scores_mse_test = np.clip(scores_mse_test, 0.0, 50.0)
-
-    # scores_r2_train = np.clip(scores_r2_train, 0.0, 1.0)
-    # scores_r2_val = np.clip(scores_r2_val, 0.0, 1.0)
-    # scores_r2_test = np.clip(scores_r2_test, 0.0, 1.0)
-
-    # n_experiments = len(scores_mse_train)
-    # n_experiments = len(scores["mse"]["train"])
-
     # Create figure for training, validation and testing scores for different features
     fig = plt.figure()
-
-
-
     # Create subplot for MSE for training, validation, testing
-    # 1 row, 2 columns, and get 1st subplot in the figure
-    ax = fig.add_subplot(1, 2, 1)
-    # x_values = [range(1, n_experiments + 1)] * n_experiments
-    # # y_values = [scores_mse_train, scores_mse_val, scores_mse_test]
-    # y_values = [scores["mse"].values()]
-    # labels = ['Training', 'Validation', 'Testing']
-    # colors = ['blue', 'red', 'green']
-
-    # # Plot MSE scores for training, validation, testing sets
-    # for x, y, label, color in zip(x_values, y_values, labels, colors):
-    #     ax.plot(x, y, marker='o', color=color, label=label)
-    #     ax.legend(loc='best')
-
-    # # TODO: Set y limits between 0 and 50, set x limits to 0 to number experiments + 1
-    # ax.set_ylim([0.0, 50.0])
-    # ax.set_xlim([0.0, n_experiments + 1])
-
-    # # TODO: Set y label to 'MSE', set x label to 'p-degree'
-    # ax.set_ylabel('MSE')
-    # ax.set_xlabel('p-degree')
+    ax = fig.add_subplot(1, 2, 1) # 1 row, 2 columns; get 1st subplot in the figure
     set_up_subplot(ax, scores, 'mse')
-
-    # TODO: Create subplot for R-square for training, validation, testing
+    # Create subplot for R-square for training, validation, testing
     ax = fig.add_subplot(1, 2, 2)
     set_up_subplot(ax, scores, 'r2')
-
-
-    # x_values = [[0], [0], [0]]
-    # y_values = [[0], [0], [0]]
-    # labels = ['Training', 'Validation', 'Testing']
-    # colors = ['blue', 'red', 'green']
-
-    # # TODO: Plot R-squared scores for training, validation, testing sets
-
-    # # TODO: Set y limits between 0 and 1, set x limits to 0 to number experiments + 1
-
-    # # TODO: Set y label to 'R-squared', set x label to 'p-degree'
-
-    # TODO: Create super title 'Scikit-learn Polynomial Expansion on Training, Validation and Testing Sets'
+    # Create super title 'Scikit-learn Polynomial Expansion on Training, Validation and Testing Sets'
     plt.suptitle('Scikit-learn Polynomial Expansion on Training, Validation and Testing Sets')
 
     '''
     Trains and tests linear regression from scikit-learn with our implementation of polynomial features
     '''
-    # TODO: Instantiate lists containing the training, validation and testing
+    # Instantiate lists containing the training, validation and testing
     # MSE and R-squared scores obtained from linear regression without nonlinear mapping
-    scores_mse_train = [0]
-    scores_mse_val = [0]
-    scores_mse_test = [0]
-    scores_r2_train = [0]
-    scores_r2_val = [0]
-    scores_r2_test = [0]
+    scores_mse_train = [score_mse_train]
+    scores_mse_val = [score_mse_val]
+    scores_mse_test = [score_mse_test]
+    scores_r2_train = [score_r2_train]
+    scores_r2_val = [score_r2_val]
+    scores_r2_test = [score_r2_test]
 
     for degree in degrees_polynomial:
 
         print('Results for LinearRegression model using our implementation of order-{} polynomial expansion features'.format(degree))
 
-        # TODO: Transform the data by nonlinear mapping using our implementation of polynomial expansion
+        # Transform the data by nonlinear mapping using our implementation of polynomial expansion
         poly_transform = PolynomialFeatureExpansion(degree=degree)
 
         # Transform x_train to x_poly_train with p-degree expansion
         x_poly_train = poly_transform.transform(x_train)
+        x_poly_val = poly_transform.transform(x_val)
+        x_poly_test = poly_transform.transform(x_test)
 
         # Initialize scikit-learn linear regression model
         model_poly = LinearRegression()
-
-        # TODO: Trains scikit-learn linear regression model using p-order polynomial expansion
+        # Trains scikit-learn linear regression model using p-order polynomial expansion
         print('Features after polynomial transform order-{}: {}'.format(degree, x_poly_train.shape[1]))
         model_poly.fit(x_poly_train, y_train)
 
-        # TODO: Test model on training set
-
-        score_mse_poly_train = 0.0
+        # Test model on training set and save MSE and R-square scores
+        score_mse_poly_train, score_r2_poly_train = score_model_on_data(model_poly, x_poly_train, y_train)
+        scores_mse_train.append(score_mse_poly_train)
+        scores_r2_train.append(score_r2_poly_train)
         print('Training set mean squared error: {:.4f}'.format(score_mse_poly_train))
-
-        score_r2_poly_train = model_poly.score(x_poly_train, y_train)
         print('Training set r-squared scores: {:.4f}'.format(score_r2_poly_train))
-
-        # TODO: Save MSE and R-square scores on training set
-
-        # TODO: Test model on validation set
-
-        score_mse_poly_val = 0.0
+        
+        # Test model on validation set and save MSE and R-square scores
+        score_mse_poly_val, score_r2_poly_val = score_model_on_data(model_poly, x_poly_val, y_val)
+        scores_mse_val.append(score_mse_poly_val)
+        scores_r2_val.append(score_r2_poly_val)
         print('Validation set mean squared error: {:.4f}'.format(score_mse_poly_val))
-
-        score_r2_poly_val = 0.0
         print('Validation set r-squared scores: {:.4f}'.format(score_r2_poly_val))
 
-        # TODO: Save MSE and R-square scores on validation set
-
-        # TODO: Test model on testing set
-
-        score_mse_poly_test = 0.0
+        # Test model on testing set and save MSE and R-square scores
+        score_mse_poly_test, score_r2_poly_test = score_model_on_data(model_poly, x_poly_test, y_test)
+        scores_mse_test.append(score_mse_poly_test)
+        scores_r2_test.append(score_r2_poly_test)
         print('Testing set mean squared error: {:.4f}'.format(score_mse_poly_test))
-
-        score_r2_poly_test = 0.0
         print('Testing set r-squared scores: {:.4f}'.format(score_r2_poly_test))
 
-        # TODO: Save MSE and R-square scores on testing set
+    # Convert each scores to NumPy arrays
+    scores = {
+        "mse": {
+            "train": np.array(scores_mse_train),
+            "val": np.array(scores_mse_val),
+            "test": np.array(scores_mse_test)
+        },
+        "r2": {
+            "train": np.array(scores_r2_train),
+            "val": np.array(scores_r2_val),
+            "test": np.array(scores_r2_test)
+        }
+    }
+    clip_scores(scores)
 
-    # TODO: Convert each scores to NumPy arrays
-
-    # TODO: Clip each set of MSE scores between 0 and 50
-
-    # TODO: Clip each set of R-squared scores between 0 and 1
-
-    n_experiments = len(scores_mse_train)
-
-    # TODO: Create figure for training, validation and testing scores for different features
-
-    # TODO: Create subplot for MSE for training, validation, testing
-
-    x_values = [[0], [0], [0]]
-    y_values = [[0], [0], [0]]
-    labels = ['Training', 'Validation', 'Testing']
-    colors = ['blue', 'red', 'green']
-
-    # TODO: Plot MSE scores for training, validation, testing sets
-
-    # TODO: Set y limits between 0 and 50, set x limits to 0 to number experiments + 1
-
-    # TODO: Set y label to 'MSE', set x label to 'p-degree'
-
-    # TODO: Create subplot for R-square for training, validation, testing
-
-    x_values = [[0], [0], [0]]
-    y_values = [[0], [0], [0]]
-    labels = ['Training', 'Validation', 'Testing']
-    colors = ['blue', 'red', 'green']
-
-    # TODO: Plot R-squared scores for training, validation, testing sets
-
-    # TODO: Set y limits between 0 and 1, set x limits to 0 to number experiments + 1
-
-    # TODO: Set y label to 'R-squared', set x label to 'p-degree'
-
-    # TODO: Create super title 'Our Polynomial Expansion on Training, Validation and Testing Sets'
+    # Create figure for training, validation and testing scores for different features
+    fig = plt.figure()
+    # Create subplot for MSE for training, validation, testing
+    ax = fig.add_subplot(1, 2, 1) # 1 row, 2 columns; get 1st subplot in the figure
+    set_up_subplot(ax, scores, 'mse')
+    # Create subplot for R-square for training, validation, testing
+    ax = fig.add_subplot(1, 2, 2)
+    set_up_subplot(ax, scores, 'r2')
+    # Create super title 'Our Polynomial Expansion on Training, Validation and Testing Sets'
+    plt.suptitle('Our Polynomial Expansion on Training, Validation and Testing Sets')
 
     plt.show()
