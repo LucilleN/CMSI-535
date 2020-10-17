@@ -332,7 +332,9 @@ def clip_scores(scores):
         scores["mse"][test_set] = np.clip(scores["mse"][test_set], 0.0, 50.0)
     # Clip each set of R-squared scores between 0 and 1
     for test_set in scores["r2"]:
-        scores["mse"][test_set] = np.clip(scores["mse"][test_set], 0.0, 50.0)
+        scores["r2"][test_set] = np.clip(scores["r2"][test_set], 0.0, 50.0)
+        
+    print("R2 scores clipped to: {}".format(scores["r2"]))
 
 
 def set_up_subplot(ax, scores, score_type):
@@ -353,8 +355,9 @@ def set_up_subplot(ax, scores, score_type):
     else: 
         raise ValueError("Unexpected score_type")
     # Set y label to 'MSE' or 'R2' depending on score_type
-    ax.set_ylabel(score_type.upper())
-    # Set x label to 'p-degree'
+    y_label = 'MSE' if score_type == 'mse' else 'R-squared'
+    ax.set_ylabel(y_label)
+    # Set x label to 'p-degree' for both types of graphs
     ax.set_xlabel('p-degree')
 
 
@@ -524,18 +527,20 @@ if __name__ == '__main__':
     set_up_subplot(ax, scores, 'mse')
 
     # TODO: Create subplot for R-square for training, validation, testing
+    ax = fig.add_subplot(1, 2, 2)
+    set_up_subplot(ax, scores, 'r2')
 
 
-    x_values = [[0], [0], [0]]
-    y_values = [[0], [0], [0]]
-    labels = ['Training', 'Validation', 'Testing']
-    colors = ['blue', 'red', 'green']
+    # x_values = [[0], [0], [0]]
+    # y_values = [[0], [0], [0]]
+    # labels = ['Training', 'Validation', 'Testing']
+    # colors = ['blue', 'red', 'green']
 
-    # TODO: Plot R-squared scores for training, validation, testing sets
+    # # TODO: Plot R-squared scores for training, validation, testing sets
 
-    # TODO: Set y limits between 0 and 1, set x limits to 0 to number experiments + 1
+    # # TODO: Set y limits between 0 and 1, set x limits to 0 to number experiments + 1
 
-    # TODO: Set y label to 'R-squared', set x label to 'p-degree'
+    # # TODO: Set y label to 'R-squared', set x label to 'p-degree'
 
     # TODO: Create super title 'Scikit-learn Polynomial Expansion on Training, Validation and Testing Sets'
     plt.suptitle('Scikit-learn Polynomial Expansion on Training, Validation and Testing Sets')
