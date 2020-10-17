@@ -19,8 +19,14 @@ TODO:
 (1) Summarize the polynomial feature expansion algorithm for non-linear mapping.
 
 (2) Why do we use this algorithm?
+We use this algorithm in order to create a nonlinear mapping for linear features
 
 (3) What negative learning phenonmenon is this algorithm prone to, and why does it happen?
+This algorithm is prone to overfitting, which is 
+This happens because producing so many extra features gives too many degrees of freedom
+more features than number of data points --> more variables than number of constraints
+this means that we can create an overly complex function that fits to not just the
+data but also the noise 
 
 TODO: Report your scores here. For example,
 
@@ -263,13 +269,35 @@ class PolynomialFeatureExpansion(object):
 
         return Z
 
+def score_model_on_data(model, x, y):
+    '''
+    Returns MSE and r-squared scores of model evaluated on any arbitrary 
+    testing sets of x and y.
 
-if __name__ == '__main__':
+    Args:
+        x: numpy array
+        y: numpy array
 
-    boston_housing_data = skdata.load_boston()
-    x = boston_housing_data.data
-    y = boston_housing_data.target
+    Returns:
+        (score_mse, score_r2): tuple of 2 floats
+    '''
+    predictions = model.predict(x)
+    score_mse = skmetrics.mean_squared_error(predictions, y)
+    score_r2 = model.score(x, y)
+    return (score_mse, score_r2)
+    
+def split_data(x, y):
+    '''
+    Splits raw data x and y into training, validation, and testing sets, using an 
+    80% - 10% - 10% split.
 
+    Args:
+        x: numpy array
+        y: numpy array
+
+    Returns:
+        (x_train, x_val, x_test, y_train, y_val, y_test): tuple of 6 numpy arrays
+    '''
     # 80 percent train, 10 percent validation, 10 percent test split
     train_idx = []
     val_idx = []
@@ -281,9 +309,21 @@ if __name__ == '__main__':
             test_idx.append(idx)
         else:
             train_idx.append(idx)
-
     x_train, x_val, x_test = x[train_idx, :], x[val_idx, :], x[test_idx, :]
     y_train, y_val, y_test = y[train_idx], y[val_idx], y[test_idx]
+    return (x_train, x_val, x_test, y_train, y_val, y_test)
+
+if __name__ == '__main__':
+
+    '''
+    Load Boston Housing data and split into train, val, test
+    '''
+    boston_housing_data = skdata.load_boston()
+    x = boston_housing_data.data
+    y = boston_housing_data.target
+
+    # 80 percent train, 10 percent validation, 10 percent test split
+    x_train, x_val, x_test, y_train, y_val, y_test = split_data(x, y)
 
     '''
     Trains and tests linear regression from scikit-learn
