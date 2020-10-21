@@ -46,10 +46,10 @@ def score_mean_squared_error(model, x, y):
     Returns:
         float : mean squared error
     '''
-
-    # TODO: Implement the score mean squared error function
-
-    return 0.0
+    # Implement the score mean squared error function
+    predictions = model.predict(x)
+    score_mse = skmetrics.mean_squared_error(predictions, y)
+    return score_mse
 
 def plot_results(axis,
                  x_values,
@@ -70,7 +70,7 @@ def plot_results(axis,
             list of numpy array of x values
         y_values : list[numpy]
             list of numpy array of y values
-        labels : str
+        labels : list[str] # this used to be just str
             list of names for legend
         colors : str
             colors for each line
@@ -78,20 +78,25 @@ def plot_results(axis,
             min and max values of x axis
         y_limits : list[float]
             min and max values of y axis
-        x_label : list[float]
+        x_label : str # these used to be just floats
             name of x axis
-        y_label : list[float]
+        y_label : str
             name of y axis
     '''
 
-    # TODO: Iterate through x_values, y_values, labels, and colors and plot them
+    # Iterate through x_values, y_values, labels, and colors and plot them
     # with associated legend
+    for x, y, label, color in zip(x_values, y_values, labels, colors):
+        ax.plot(x, y, marker='o', color=color, label=label)
+        ax.legend(loc='best')
 
-    # TODO: Set x and y limits
+    # Set x and y limits
+    ax.set_xlim(x_limits)
+    ax.set_ylim(y_limits)
 
-    # TODO: Set x and y labels
-
-    pass
+    # Set x and y labels
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
 
 
 if __name__ == '__main__':
@@ -122,8 +127,8 @@ if __name__ == '__main__':
 
     print('Experiment 1: Overfitting Linear Regression with Polynomial Expansion')
 
-    # TODO: Initialize a list containing 1, 2, 3 as the degrees for polynomial expansion
-    degrees = []
+    # Initialize a list containing 1, 2, 3 as the degrees for polynomial expansion
+    degrees = [1, 2, 3]
 
     # Initialize empty lists to store scores for MSE and R-squared
     scores_mse_linear_overfit_train = []
@@ -135,44 +140,57 @@ if __name__ == '__main__':
 
     for degree in degrees:
 
-        # TODO: Initialize polynomial expansion
+        # Initialize polynomial expansion
+        poly_transform = skpreprocess.PolynomialFeatures(degree=degree)
 
-        # TODO: Compute the polynomial terms needed for the data
+        # Compute the polynomial terms needed for the data
+        poly_transform.fit(x_train)
 
-        # TODO: Transform the data by nonlinear mapping
+        # Transform the data by nonlinear mapping
+        x_poly_train = poly_transform.transform(x_train)
+        x_poly_val = poly_transform.transform(x_val)
+        x_poly_test = poly_transform.transform(x_test)
 
-        # TODO: Initialize scikit-learn linear regression model
+        # Initialize scikit-learn linear regression model
+        model_linear_overfit = LinearRegression()
 
-        # TODO: Trains scikit-learn linear regression model
+        # Trains scikit-learn linear regression model
+        model_linear_overfit.fit(x_poly_train, y_train)
 
         print('Results for linear regression model with degree {} polynomial expansion'.format(degree))
 
-        # TODO: Test model on training set
-        score_mse_linear_overfit_train = 0.0
+        # Test model on training set
+        score_mse_linear_overfit_train = score_mean_squared_error(model_linear_overfit, x_poly_train, y_train)
         print('Training set mean squared error: {:.4f}'.format(score_mse_linear_overfit_train))
 
-        score_r2_linear_overfit_train = 0.0
+        score_r2_linear_overfit_train = model_linear_overfit.score(x_poly_train, y_train)
         print('Training set r-squared scores: {:.4f}'.format(score_r2_linear_overfit_train))
 
-        # TODO: Save MSE and R-squared training scores
-
-        # TODO: Test model on validation set
-        score_mse_linear_overfit_val = 0.0
+        # Save MSE and R-squared training scores
+        scores_mse_linear_overfit_train.append(score_mse_linear_overfit_train)
+        scores_r2_linear_overfit_train.append(score_r2_linear_overfit_train)
+    
+        # Test model on validation set
+        score_mse_linear_overfit_val = score_mean_squared_error(model_linear_overfit, x_poly_val, y_val)
         print('Validation set mean squared error: {:.4f}'.format(score_mse_linear_overfit_val))
 
-        score_r2_linear_overfit_val = 0.0
+        score_r2_linear_overfit_val = model_linear_overfit.score(x_poly_val, y_val)
         print('Validation set r-squared scores: {:.4f}'.format(score_r2_linear_overfit_val))
 
-        # TODO: Save MSE and R-squared validation scores
+        # Save MSE and R-squared validation scores
+        scores_mse_linear_overfit_val.append(score_mse_linear_overfit_val)
+        scores_r2_linear_overfit_val.append(score_r2_linear_overfit_val)
 
-        # TODO: Test model on testing set
-        score_mse_linear_overfit_test = 0.0
+        # Test model on testing set
+        score_mse_linear_overfit_test = score_mean_squared_error(model_linear_overfit, x_poly_test, y_test)
         print('Testing set mean squared error: {:.4f}'.format(score_mse_linear_overfit_test))
 
-        score_r2_linear_overfit_test = 0.0
+        score_r2_linear_overfit_test = model_linear_overfit.score(x_poly_test, y_test)
         print('Testing set r-squared scores: {:.4f}'.format(score_r2_linear_overfit_test))
 
-        # TODO: Save MSE and R-squared testing scores
+        # Save MSE and R-squared testing scores
+        scores_mse_linear_overfit_test.append(score_mse_linear_overfit_test)
+        scores_r2_linear_overfit_test.append(score_r2_linear_overfit_test)
 
     # Convert each scores to NumPy arrays
     scores_mse_linear_overfit_train = np.array(scores_mse_linear_overfit_train)
@@ -182,9 +200,15 @@ if __name__ == '__main__':
     scores_r2_linear_overfit_val = np.array(scores_r2_linear_overfit_val)
     scores_r2_linear_overfit_test = np.array(scores_r2_linear_overfit_test)
 
-    # TODO: Clip each set of MSE scores between 0 and 40
+    # Clip each set of MSE scores between 0 and 40
+    scores_mse_linear_overfit_train = np.clip(scores_mse_linear_overfit_train, 0.0, 40.0)
+    scores_mse_linear_overfit_val = np.clip(scores_mse_linear_overfit_val, 0.0, 40.0)
+    scores_mse_linear_overfit_test = np.clip(scores_mse_linear_overfit_test, 0.0, 40.0)
 
-    # TODO: Clip each set of R-squared scores between 0 and 1
+    # Clip each set of R-squared scores between 0 and 1
+    scores_r2_linear_overfit_train = np.clip(scores_r2_linear_overfit_train, 0.0, 1.0)
+    scores_r2_linear_overfit_val = np.clip(scores_r2_linear_overfit_val, 0.0, 1.0)
+    scores_r2_linear_overfit_test = np.clip(scores_r2_linear_overfit_test, 0.0, 1.0)
 
     # Create figure for training, validation and testing scores for different features
     n_experiments = scores_mse_linear_overfit_train.shape[0]
@@ -193,13 +217,32 @@ if __name__ == '__main__':
     labels = ['Training', 'Validation', 'Testing']
     colors = ['blue', 'red', 'green']
 
-    # TODO: Create the first subplot of a 1 by 2 figure to plot MSE for training, validation, testing
+    # Create the first subplot of a 1 by 2 figure to plot MSE for training, validation, testing
+    ax = fig.add_subplot(1, 2, 1) 
 
-    # TODO: Set x and y values
+    # Set x and y values
+    # x_values refer to the degree of the polynomial [1, 2, 3]
+    x_values = [range(1, n_experiments + 1)] * n_experiments # This is a list of 3 lists
+    y_values = [
+        scores_mse_linear_overfit_train,
+        scores_mse_linear_overfit_val,
+        scores_mse_linear_overfit_test,
+    ]
 
-    # TODO: Plot MSE scores for training, validation, testing sets
+    # Plot MSE scores for training, validation, testing sets
     # Set x limits to 0 to number of experiments + 1 and y limits between 0 and 40
-    # Set x label to 'p-degree' and y label to 'MSE',
+    # Set x label to 'p-degree' and y label to 'MSE'
+    plot_results(
+        axis=ax,
+        x_values=x_values,
+        y_values=y_values,
+        labels=labels,
+        colors=colors,
+        x_limits=[0.0, n_experiments + 1],
+        y_limits=[0.0, 40.0],
+        x_label='p-degree',
+        y_label='MSE'
+    )
 
     # TODO: Create the second subplot of a 1 by 2 figure to plot R-squared for training, validation, testing
 
@@ -220,9 +263,9 @@ if __name__ == '__main__':
 
     print('Experiment 2: Underfitting Ridge Regression with alpha/lambda')
 
-    # TODO: Initialize a list containing:
+    # Initialize a list containing:
     # 0.0, 1.0, 10.0, 100.0, 1000.0, 10000.0 as the degrees for polynomial expansion
-    alphas = []
+    alphas = [0.0, 1.0, 10.0, 100.0, 1000.0, 10000.0]
 
     # Initialize empty lists to store scores for MSE and R-squared
     scores_mse_ridge_underfit_train = []
@@ -233,38 +276,47 @@ if __name__ == '__main__':
     scores_r2_ridge_underfit_test = []
 
     for alpha in alphas:
-        # TODO: Initialize scikit-learn ridge regression model
+        # Initialize scikit-learn ridge regression model
+        # alpha is the lambda (degree of regularization)
+        model_ridge_underfit = RidgeRegression(alpha=alpha)
 
-        # TODO: Trains scikit-learn ridge regression model
+        # Trains scikit-learn ridge regression model
+        model_ridge_underfit.fit(x_train, y_train)
 
         print('Results for scikit-learn RidgeRegression model with alpha={}'.format(alpha))
 
-        # TODO: Test model on training set
-        score_mse_ridge_underfit_train = 0.0
+        # Test model on training set
+        score_mse_ridge_underfit_train = score_mean_squared_error(model_ridge_underfit, x_train, y_train)
         print('Training set mean squared error: {:.4f}'.format(score_mse_ridge_underfit_train))
 
-        score_r2_ridge_underfit_train = 0.0
+        score_r2_ridge_underfit_train = model_ridge_underfit.score(x_train, y_train)
         print('Training set r-squared scores: {:.4f}'.format(score_r2_ridge_underfit_train))
 
-        # TODO: Save MSE and R-squared training scores
+        # Save MSE and R-squared training scores
+        scores_mse_ridge_underfit_train.append(score_mse_ridge_underfit_train)
+        scores_r2_ridge_underfit_train.append(score_r2_ridge_underfit_train)
 
-        # TODO: Test model on validation set
-        score_mse_ridge_underfit_val = 0.0
+        # Test model on validation set
+        score_mse_ridge_underfit_val = score_mean_squared_error(model_ridge_underfit, x_val, y_val)
         print('Validation set mean squared error: {:.4f}'.format(score_mse_ridge_underfit_val))
 
-        score_r2_ridge_underfit_val = 0.0
+        score_r2_ridge_underfit_val = model_ridge_underfit.score(x_val, y_val)
         print('Validation set r-squared scores: {:.4f}'.format(score_r2_ridge_underfit_val))
 
-        # TODO: Save MSE and R-squared validation scores
+        # Save MSE and R-squared validation scores
+        scores_mse_ridge_underfit_val.append(score_mse_ridge_underfit_val)
+        scores_r2_ridge_underfit_val.append(score_r2_ridge_underfit_val)
 
-        # TODO: Test model on testing set
-        score_mse_ridge_underfit_test = 0.0
+        # Test model on testing set
+        score_mse_ridge_underfit_test = score_mean_squared_error(model_ridge_underfit, x_test, y_test)
         print('Testing set mean squared error: {:.4f}'.format(score_mse_ridge_underfit_test))
 
-        score_r2_ridge_underfit_test = 0.0
+        score_r2_ridge_underfit_test = model_ridge_underfit.score(x_test, y_test)
         print('Testing set r-squared scores: {:.4f}'.format(score_r2_ridge_underfit_test))
 
-        # TODO: Save MSE and R-squared testing scores
+        # Save MSE and R-squared testing scores
+        scores_mse_ridge_underfit_test.append(score_mse_ridge_underfit_test)
+        scores_r2_ridge_underfit_test.append(score_r2_ridge_underfit_test)
 
     # Convert each scores to NumPy arrays
     scores_mse_ridge_underfit_train = np.array(scores_mse_ridge_underfit_train)
@@ -274,9 +326,15 @@ if __name__ == '__main__':
     scores_r2_ridge_underfit_val = np.array(scores_r2_ridge_underfit_val)
     scores_r2_ridge_underfit_test = np.array(scores_r2_ridge_underfit_test)
 
-    # TODO: Clip each set of MSE scores between 0 and 40
+    # Clip each set of MSE scores between 0 and 40
+    scores_mse_ridge_underfit_train = np.clip(scores_mse_ridge_underfit_train, 0.0, 40.0)
+    scores_mse_ridge_underfit_val = np.clip(scores_mse_ridge_underfit_val, 0.0, 40.0)
+    scores_mse_ridge_underfit_test = np.clip(scores_mse_ridge_underfit_test, 0.0, 40.0)
 
-    # TODO: Clip each set of R-squared scores between 0 and 1
+    # Clip each set of R-squared scores between 0 and 1
+    scores_r2_ridge_underfit_train = np.clip(scores_r2_ridge_underfit_train, 0.0, 1.0)
+    scores_r2_ridge_underfit_val = np.clip(scores_r2_ridge_underfit_val, 0.0, 1.0)
+    scores_r2_ridge_underfit_test = np.clip(scores_r2_ridge_underfit_test, 0.0, 1.0)
 
     # Create figure for training, validation and testing scores for different features
     n_experiments = scores_mse_ridge_underfit_train.shape[0]
