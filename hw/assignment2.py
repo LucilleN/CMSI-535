@@ -17,23 +17,38 @@ Summary:
 
 What you did for this assignment:
 
-For this assignment, I implemented a RidgeRegressionClosedForm class by writing its `score`, `predict`, and `fit` functions. The `fit` function computed the optimal weights, w*, using the closed form solution of: 
+For this assignment, I implemented a RidgeRegressionClosedForm class by writing its `score`, `predict`, and `fit` 
+functions. The `fit` function computed the optimal weights, w*, using the closed form solution of: 
     w* = ( Z^T * Z + lambda * I )^-1 * Z^T * y
-where w* is the optimal weights that minimize loss as much as possible while staying within the regularization constraint. 
-Then, the main method performs two experiments to complare our RidgeRegressionClosedForm class with the skikit-learn implementation of the RidgeRegression class. To do so, we first initialize an sklearn RidgeRegression model, and then for increasing values of alpha from 10^0 up to 10^5, we train the model on the polynomial-expanded training set, test it on the polynomial-expanded training, validation, and testing sets, and finally plot the MSE and R-squared scores for the different alphas. Then we repeat this training-validation-testing loop for our own implementation of the RidgeRegressionClosedForm class, and plot its MSE and R-squared scores for different alphas. 
+where w* is the optimal weights that minimize loss as much as possible while staying within the regularization 
+constraint. 
+Then, the main method performs two experiments to complare our RidgeRegressionClosedForm class with the 
+skikit-learn implementation of the RidgeRegression class. To do so, we first initialize an sklearn 
+RidgeRegression model, and then for increasing values of alpha from 10^0 up to 10^5, we train the model on the 
+polynomial-expanded training set, test it on the polynomial-expanded training, validation, and testing sets, and 
+finally plot the MSE and R-squared scores for the different alphas. Then we repeat this 
+training-validation-testing loop for our own implementation of the RidgeRegressionClosedForm class, and plot its 
+MSE and R-squared scores for different alphas. 
 
 What loss you minimized:
 
 The loss function I minimized was: 
     l(w) = 1/N * ( (Zw-y)^T * (Zw-y) + lambda * w^T * w )
-The first term of the sum in the above equation, (Zw-y)^T * (Zw-y), represents the data fidelity loss. The second term, lambda * w^T * w, represents the regularization loss. (In the implementation below, we use the variable `alpha` in place of lambda.) Thus, the above equation can be captured by: loss = data fidelity loss + regularization loss, where the data fidelity loss is 1/N * ((Zw-y)^T * (Zw-y)), and the regularization loss is 1/N * (lambda * w^T * w).
+The first term of the sum in the above equation, (Zw-y)^T * (Zw-y), represents the data fidelity loss. The second 
+term, lambda * w^T * w, represents the regularization loss. (In the implementation below, we use the variable 
+`alpha` in place of lambda.) Thus, the above equation can be captured by: loss = data fidelity loss + 
+regularization loss, where the data fidelity loss is 1/N * ((Zw-y)^T * (Zw-y)), and the regularization loss is 1/
+N * (lambda * w^T * w).
 
 How you minimized the loss function:
 
 I minimized the loss by computing the optimal weights, w*, using the closed-form solution for Ridge Regression 
-using a soft constraint. These weights were computed with the equation w* = ( Z^T * Z + lambda * I )^-1 * Z^T * y.
-This equation gives us the weights that minimize the loss while still staying within the regularization constraint, beecause it is derived by setting the gradient of the data fidelity loss, plus lambda * the gradient of the regularization loss, to 0. This means that the solution w* must be the point where the gradients point in the opposite directions, and the w* that we calculate is the closest we can get to the weights that minimize loss without regularization. Thus, the minimum loss is l(w*). 
-
+with a soft constraint. These weights were computed with the equation w* = ( Z^T * Z + lambda * I )^-1 * Z^T * y.
+This equation gives us the weights that minimize the loss while still staying within the regularization 
+constraint, because it is derived by setting the gradient of the data fidelity loss, plus lambda * the gradient 
+of the regularization loss, to 0. This means that the solution w* must be the point where the gradients point in 
+the opposite directions, and the w* that we calculate is the closest we can get to the weights that minimize loss 
+without regularization. Thus, the minimum loss is l(w*). 
 
 Report your scores here:
 
