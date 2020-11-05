@@ -7,17 +7,35 @@ from matplotlib import pyplot as plt
 
 
 '''
-Name: Doe, John (Please write names in <Last Name, First Name> format)
+Name: Njoo, Lucille
 
-Collaborators: Doe, Jane (Please write names in <Last Name, First Name> format)
+Collaborators: Arteaga, Andrew 
 
-Collaboration details: Discussed <function name> implementation details with Jane Doe.
+Collaboration details: Discussed how to do the matrix multiplication in the closed-form solution equation for w*. 
 
 Summary:
 
-Please describe what you did for this assignment, what loss you minimized, and how you minimized the loss function
+What you did for this assignment:
 
-Report your scores here. For example,
+For this assignment, I implemented a RidgeRegressionClosedForm class by writing its `score`, `predict`, and `fit` functions. The `fit` function computed the optimal weights, w*, using the closed form solution of: 
+    w* = ( Z^T * Z + lambda * I )^-1 * Z^T * y
+where w* is the optimal weights that minimize loss as much as possible while staying within the regularization constraint. 
+Then, the main method performs two experiments to complare our RidgeRegressionClosedForm class with the skikit-learn implementation of the RidgeRegression class. To do so, we first initialize an sklearn RidgeRegression model, and then for increasing values of alpha from 10^0 up to 10^5, we train the model on the polynomial-expanded training set, test it on the polynomial-expanded training, validation, and testing sets, and finally plot the MSE and R-squared scores for the different alphas. Then we repeat this training-validation-testing loop for our own implementation of the RidgeRegressionClosedForm class, and plot its MSE and R-squared scores for different alphas. 
+
+What loss you minimized:
+
+The loss function I minimized was: 
+    l(w) = 1/N * ( (Zw-y)^T * (Zw-y) + lambda * w^T * w )
+The first term of the sum in the above equation, (Zw-y)^T * (Zw-y), represents the data fidelity loss. The second term, lambda * w^T * w, represents the regularization loss. (In the implementation below, we use the variable `alpha` in place of lambda.) Thus, the above equation can be captured by: loss = data fidelity loss + regularization loss, where the data fidelity loss is 1/N * ((Zw-y)^T * (Zw-y)), and the regularization loss is 1/N * (lambda * w^T * w).
+
+How you minimized the loss function:
+
+I minimized the loss by computing the optimal weights, w*, using the closed-form solution for Ridge Regression 
+using a soft constraint. These weights were computed with the equation w* = ( Z^T * Z + lambda * I )^-1 * Z^T * y.
+This equation gives us the weights that minimize the loss while still staying within the regularization constraint, beecause it is derived by setting the gradient of the data fidelity loss, plus lambda * the gradient of the regularization loss, to 0. This means that the solution w* must be the point where the gradients point in the opposite directions, and the w* that we calculate is the closest we can get to the weights that minimize loss without regularization. Thus, the minimum loss is l(w*). 
+
+
+Report your scores here:
 
 Results for scikit-learn RidgeRegression model with alpha=1.0
 Training set mean squared error: 6.3724
@@ -61,48 +79,60 @@ Validation set mean squared error: 12.5270
 Validation set r-squared scores: 0.8213
 Testing set mean squared error: 10.8895
 Testing set r-squared scores: 0.8606
-Results for scikit-learn RidgeRegression model with alpha=1.0
-Training set mean squared error: 0.0000
-Training set r-squared scores: 0.0000
-Validation set mean squared error: 0.0000
-Validation set r-squared scores: 0.0000
-Testing set mean squared error: 0.0000
-Testing set r-squared scores: 0.0000
-Results for scikit-learn RidgeRegression model with alpha=10.0
-Training set mean squared error: 0.0000
-Training set r-squared scores: 0.0000
-Validation set mean squared error: 0.0000
-Validation set r-squared scores: 0.0000
-Testing set mean squared error: 0.0000
-Testing set r-squared scores: 0.0000
-Results for scikit-learn RidgeRegression model with alpha=100.0
-Training set mean squared error: 0.0000
-Training set r-squared scores: 0.0000
-Validation set mean squared error: 0.0000
-Validation set r-squared scores: 0.0000
-Testing set mean squared error: 0.0000
-Testing set r-squared scores: 0.0000
-Results for scikit-learn RidgeRegression model with alpha=1000.0
-Training set mean squared error: 0.0000
-Training set r-squared scores: 0.0000
-Validation set mean squared error: 0.0000
-Validation set r-squared scores: 0.0000
-Testing set mean squared error: 0.0000
-Testing set r-squared scores: 0.0000
-Results for scikit-learn RidgeRegression model with alpha=10000.0
-Training set mean squared error: 0.0000
-Training set r-squared scores: 0.0000
-Validation set mean squared error: 0.0000
-Validation set r-squared scores: 0.0000
-Testing set mean squared error: 0.0000
-Testing set r-squared scores: 0.0000
-Results for scikit-learn RidgeRegression model with alpha=100000.0
-Training set mean squared error: 0.0000
-Training set r-squared scores: 0.0000
-Validation set mean squared error: 0.0000
-Validation set r-squared scores: 0.0000
-Testing set mean squared error: 0.0000
-Testing set r-squared scores: 0.0000
+Results for our RidgeRegression model with alpha=1.0
+Training Loss: 6.664
+Data Fidelity Loss: 6.413  Regularization Loss: 0.252
+Training set mean squared error: 6.4127
+Training set r-squared scores: 0.9262
+Validation set mean squared error: 8.9723
+Validation set r-squared scores: 0.8720
+Testing set mean squared error: 18.4835
+Testing set r-squared scores: 0.7633
+Results for our RidgeRegression model with alpha=10.0
+Training Loss: 7.415
+Data Fidelity Loss: 7.026  Regularization Loss: 0.389
+Training set mean squared error: 7.0258
+Training set r-squared scores: 0.9191
+Validation set mean squared error: 9.5386
+Validation set r-squared scores: 0.8639
+Testing set mean squared error: 16.1997
+Testing set r-squared scores: 0.7926
+Results for our RidgeRegression model with alpha=100.0
+Training Loss: 8.347
+Data Fidelity Loss: 7.930  Regularization Loss: 0.417
+Training set mean squared error: 7.9301
+Training set r-squared scores: 0.9087
+Validation set mean squared error: 10.6471
+Validation set r-squared scores: 0.8481
+Testing set mean squared error: 16.3874
+Testing set r-squared scores: 0.7902
+Results for our RidgeRegression model with alpha=1000.0
+Training Loss: 9.429
+Data Fidelity Loss: 8.911  Regularization Loss: 0.517
+Training set mean squared error: 8.9114
+Training set r-squared scores: 0.8974
+Validation set mean squared error: 11.2366
+Validation set r-squared scores: 0.8397
+Testing set mean squared error: 14.5313
+Testing set r-squared scores: 0.8139
+Results for our RidgeRegression model with alpha=10000.0
+Training Loss: 10.707
+Data Fidelity Loss: 10.042  Regularization Loss: 0.665
+Training set mean squared error: 10.0420
+Training set r-squared scores: 0.8844
+Validation set mean squared error: 11.8909
+Validation set r-squared scores: 0.8304
+Testing set mean squared error: 13.8512
+Testing set r-squared scores: 0.8226
+Results for our RidgeRegression model with alpha=100000.0
+Training Loss: 12.984
+Data Fidelity Loss: 11.598  Regularization Loss: 1.385
+Training set mean squared error: 11.5984
+Training set r-squared scores: 0.8665
+Validation set mean squared error: 13.1313
+Validation set r-squared scores: 0.8127
+Testing set mean squared error: 11.8234
+Testing set r-squared scores: 0.8486
 '''
 
 '''
@@ -132,12 +162,9 @@ class RidgeRegressionClosedForm(object):
         N, d = Z.shape
 
         # w* = ( Z^T * Z + lambda * I )^-1 * Z^T * y
-        # shape of the inverse: (d x N) * (N x d) + (d x d) = (d x d)
-        # shape of w_star: (d x d) * (d x N) * (1 x N) ???? 
         Z_transpoze_Z = np.matmul(Z.T, Z)
         lambda_I = alpha * np.identity(d)
         inverse = np.linalg.inv(Z_transpoze_Z + lambda_I)
-        print("Shape of inverse * Z.T: {}".format(np.matmul(inverse, Z.T).shape))
         w_star = np.matmul(np.matmul(inverse, Z.T), y)
         
         self.__weights = w_star
