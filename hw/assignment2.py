@@ -137,6 +137,7 @@ class RidgeRegressionClosedForm(object):
         Z_transpoze_Z = np.matmul(Z.T, Z)
         lambda_I = alpha * np.identity(d)
         inverse = np.linalg.inv(Z_transpoze_Z + lambda_I)
+        print("Shape of inverse * Z.T: {}".format(np.matmul(inverse, Z.T).shape))
         w_star = np.matmul(np.matmul(inverse, Z.T), y)
         
         self.__weights = w_star
@@ -164,7 +165,7 @@ class RidgeRegressionClosedForm(object):
         Returns:
             numpy : d x 1 label vector
         '''
-        predictions = np.matmul(self.__weights.T, x)
+        predictions = np.matmul(self.__weights.T, z)
         return predictions
 
     def __score_r_squared(self, y_hat, y):
@@ -485,9 +486,9 @@ if __name__ == '__main__':
     scores_r2_ridge_ours_test = []
 
     # Convert dataset (N x d) to correct shape (d x N)
-    x_train = np.transpose(x_train, axes=(1, 0))
-    x_val = np.transpose(x_val, axes=(1, 0))
-    x_test = np.transpose(x_test, axes=(1, 0))
+    x_poly_train = np.transpose(x_poly_train, axes=(1, 0))
+    x_poly_val = np.transpose(x_poly_val, axes=(1, 0))
+    x_poly_test = np.transpose(x_poly_test, axes=(1, 0))
 
     # For each alpha, train a ridge regression model on degree 2 polynomial features
     for alpha in alphas:
@@ -498,12 +499,12 @@ if __name__ == '__main__':
         print('Results for our RidgeRegression model with alpha={}'.format(alpha))
 
         # Train model on training set
-        model.fit(x_train, y_train, alpha=alpha)
+        model.fit(x_poly_train, y_train, alpha=alpha)
 
         # Test model on training set using mean squared error and r-squared
-        score_mse_ridge_ours_train = model.score(x_train, y_train, scoring_func="mean_squared_error")
+        score_mse_ridge_ours_train = model.score(x_poly_train, y_train, scoring_func="mean_squared_error")
         print('Training set mean squared error: {:.4f}'.format(score_mse_ridge_ours_train))
-        score_r2_ridge_ours_train = model.score(x_train, y_train, scoring_func="r_squared")
+        score_r2_ridge_ours_train = model.score(x_poly_train, y_train, scoring_func="r_squared")
         print('Training set r-squared scores: {:.4f}'.format(score_r2_ridge_ours_train))
 
         # Save MSE and R-squared training scores
@@ -511,9 +512,9 @@ if __name__ == '__main__':
         scores_r2_ridge_ours_train.append(score_r2_ridge_ours_train)
 
         # Test model on validation set using mean squared error and r-squared
-        score_mse_ridge_ours_val = model.score(x_val, y_val, scoring_func="mean_squared_error")
+        score_mse_ridge_ours_val = model.score(x_poly_val, y_val, scoring_func="mean_squared_error")
         print('Validation set mean squared error: {:.4f}'.format(score_mse_ridge_ours_val))
-        score_r2_ridge_ours_val = model.score(x_val, y_val, scoring_func="r_squared")
+        score_r2_ridge_ours_val = model.score(x_poly_val, y_val, scoring_func="r_squared")
         print('Validation set r-squared scores: {:.4f}'.format(score_r2_ridge_ours_val))
 
         # Save MSE and R-squared validation scores
@@ -521,9 +522,9 @@ if __name__ == '__main__':
         scores_r2_ridge_ours_val.append(score_r2_ridge_ours_val)
 
         # Test model on testing set using mean squared error and r-squared
-        score_mse_ridge_ours_test = model.score(x_test, y_test, scoring_func="mean_squared_error")
+        score_mse_ridge_ours_test = model.score(x_poly_test, y_test, scoring_func="mean_squared_error")
         print('Testing set mean squared error: {:.4f}'.format(score_mse_ridge_ours_test))
-        score_r2_ridge_ours_test = model.score(x_test, y_test, scoring_func="r_squared")
+        score_r2_ridge_ours_test = model.score(x_poly_test, y_test, scoring_func="r_squared")
         print('Testing set r-squared scores: {:.4f}'.format(score_r2_ridge_ours_test))
 
         # Save MSE and R-squared testing scores
