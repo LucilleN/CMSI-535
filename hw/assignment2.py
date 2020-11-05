@@ -127,13 +127,26 @@ class RidgeRegressionClosedForm(object):
             alpha : float
                 weight (lambda) of regularization term
         '''
+        # Turn z from (d x N) to Z (N x d) by taking its transpose
+        Z = z.T
+        N, d = Z.shape
 
-        # TODO: Implement the fit function
+        # w* = ( Z^T * Z + lambda * I )^-1 * Z^T * y
+        # shape of the inverse: (d x N) * (N x d) + (d x d) = (d x d)
+        # shape of w_star: (d x d) * (d x N) * (1 x N) ???? 
+        Z_transpoze_Z = np.matmul(Z.T, Z)
+        lambda_I = alpha * np.identity(d)
+        inverse = np.linalg.inv(Z_transpoze_Z + lambda_I)
+        w_star = np.matmul(np.matmul(inverse, Z.T), y)
+        
+        self.__weights = w_star
+        
+        # Compute loss
+        # l(w) = 1/N * ( (Zw-y)^T * (Zw-y) + lambda * w^T * w )
+        Z_w_star_minus_y = np.matmul(Z, w_star) - y
 
-        # TODO: Compute loss
-
-        loss_data_fidelity = 0.0
-        loss_regularization = 0.0
+        loss_data_fidelity = 1/N * np.matmul(Z_w_star_minus_y.T, Z_w_star_minus_y)
+        loss_regularization = 1/N * alpha * np.matmul(w_star.T, w_star)
         loss = loss_data_fidelity + loss_regularization
 
         print('Training Loss: {:.3f}'.format(loss))
@@ -151,10 +164,8 @@ class RidgeRegressionClosedForm(object):
         Returns:
             numpy : d x 1 label vector
         '''
-
-        # TODO: Implement the predict function
-
-        return 0.0
+        predictions = np.matmul(self.__weights.T, x)
+        return predictions
 
     def __score_r_squared(self, y_hat, y):
         '''
@@ -170,9 +181,15 @@ class RidgeRegressionClosedForm(object):
             float : r-squared score
         '''
 
-        # TODO: Implement the __score_r_squared function
+        # Unexplained variation: u = sum (y_hat - y)^2
+        sum_squared_errors = np.sum((y_hat - y) ** 2)
 
-        return 0.0
+        # Total variation in the data: v = sum (y - y_mean)^2
+        y_mean = np.mean(y)
+        sum_variance = np.sum((y - y_mean) ** 2)
+
+        # R-squared score: r^2 = 1 - (u / v)
+        return 1.0 - (sum_squared_errors / sum_variance)
 
     def __score_mean_squared_error(self, y_hat, y):
         '''
@@ -187,10 +204,8 @@ class RidgeRegressionClosedForm(object):
         Returns:
             float : mean squared error (mse)
         '''
-
-        # TODO: Implement the __score_mean_squared_error function
-
-        return 0.0
+        # MSE = mean(difference^2)
+        return np.mean((y_hat - y) ** 2)
 
     def score(self, x, y, scoring_func='r_squared'):
         '''
@@ -208,13 +223,12 @@ class RidgeRegressionClosedForm(object):
         Returns:
             float : mean squared error (mse)
         '''
-
-        # TODO: Implement the score function
+        predictions = self.predict(x)
 
         if scoring_func == 'r_squared':
-            return 0.0
+            return self.__score_r_squared(predictions, y)
         elif scoring_func == 'mean_squared_error':
-            return 0.0
+            return self.__score_mean_squared_error(predictions, y)
         else:
             raise ValueError('Encountered unsupported scoring_func: {}'.format(scoring_func))
 
@@ -224,7 +238,7 @@ Utility functions to compute error and plot
 '''
 def score_mean_squared_error(model, x, y):
     '''
-    Scores the model on mean squared error metric
+    Scores the model on mean squared error metric from skmetrics
 
     Args:
         model : object
@@ -236,8 +250,6 @@ def score_mean_squared_error(model, x, y):
     Returns:
         float : mean squared error
     '''
-
-    # Implement the score mean squared error function
     predictions = model.predict(x)
     mse = skmetrics.mean_squared_error(predictions, y)
     return mse
@@ -312,6 +324,7 @@ if __name__ == '__main__':
     y_train, y_val, y_test = y[train_idx], y[val_idx], y[test_idx]
 
     '''
+    Part 1: Scikit-Learn Ridge Regression Model
     Trains and tests Ridge regression model from scikit-learn
     '''
     # Initialize polynomial expansion of degree 2
@@ -406,24 +419,60 @@ if __name__ == '__main__':
     # Create the first subplot of a 1 by 2 figure to plot MSE for training, validation, testing
     ax = fig.add_subplot(1, 2, 1)
 
-    # TODO: Set x (alpha in log scale) and y values (MSE)
+    # Set x (alpha in log scale) and y values (MSE)
+    x_values = [np.log(np.asarray(alphas) + 1.0)] * n_experiments
+    y_values = [
+        scores_mse_ridge_scikit_train,
+        scores_mse_ridge_scikit_val,
+        scores_mse_ridge_scikit_test,
+    ]
 
-    # TODO: Plot MSE scores for training, validation, testing sets
-    # Set x limits to 0 to max of x_values + 1 and y limits between 0 and 40
-    # Set x label to 'alpha (log scale)' and y label to 'MSE',
+    # Plot MSE scores for training, validation, testing sets
+    #   - Set x limits to 0 to max of x_values + 1 and y limits between 0 and 40
+    #   - Set x label to 'alpha (log scale)' and y label to 'MSE',
+    plot_results(
+        axis=ax,
+        x_values=x_values,
+        y_values=y_values,
+        labels=labels,
+        colors=colors,
+        x_limits=[0.0, np.log(alphas[-1]) + 1],
+        y_limits=[0.0, 40.0],
+        x_label='alphas',
+        y_label='MSE'
+    )
 
     # Create the second subplot of a 1 by 2 figure to plot R-squared for training, validation, testing
     ax = fig.add_subplot(1, 2, 2)
 
-    # TODO: Set x (alpha in log scale) and y values (R-squared)
+    # Set x (alpha in log scale) and y values (R-squared)
+    x_values = [np.log(np.asarray(alphas) + 1.0)] * n_experiments
+    y_values = [
+        scores_r2_ridge_scikit_train,
+        scores_r2_ridge_scikit_val,
+        scores_r2_ridge_scikit_test,
+    ]
 
-    # TODO: Plot R-squared scores for training, validation, testing sets
-    # Set x limits to 0 to max of x_values + 1 and y limits between 0 and 1
-    # Set x label to 'alpha (log scale)' and y label to 'R-squared',
+    # Plot R-squared scores for training, validation, testing sets
+    #   - Set x limits to 0 to max of x_values + 1 and y limits between 0 and 1
+    #   - Set x label to 'alpha (log scale)' and y label to 'R-squared',
+    plot_results(
+        axis=ax,
+        x_values=x_values,
+        y_values=y_values,
+        labels=labels,
+        colors=colors,
+        x_limits=[0.0, np.log(alphas[-1]) + 1],
+        y_limits=[0.0, 1.0],
+        x_label='alphas',
+        y_label='R-squared'
+    )
 
-    # TODO: Create super title 'Scikit-Learn Ridge Regression on Training, Validation and Testing Sets'
+    # Create super title 'Scikit-Learn Ridge Regression on Training, Validation and Testing Sets'
+    plt.suptitle('Scikit-Learn Ridge Regression on Training, Validation and Testing Sets')
 
     '''
+    Part 2: Our Ridge Regression Model
     Trains and tests our ridge regression model using different alphas
     '''
 
@@ -435,43 +484,51 @@ if __name__ == '__main__':
     scores_mse_ridge_ours_test = []
     scores_r2_ridge_ours_test = []
 
-    # TODO: convert dataset (N x d) to correct shape (d x N)
+    # Convert dataset (N x d) to correct shape (d x N)
+    x_train = np.transpose(x_train, axes=(1, 0))
+    x_val = np.transpose(x_val, axes=(1, 0))
+    x_test = np.transpose(x_test, axes=(1, 0))
 
     # For each alpha, train a ridge regression model on degree 2 polynomial features
     for alpha in alphas:
 
-        # TODO: Initialize our own ridge regression model
+        # Initialize our own ridge regression model
+        model = RidgeRegressionClosedForm()
 
         print('Results for our RidgeRegression model with alpha={}'.format(alpha))
 
-        # TODO: Train model on training set
+        # Train model on training set
+        model.fit(x_train, y_train, alpha=alpha)
 
-        # TODO: Test model on training set using mean squared error and r-squared
-        score_mse_ridge_ours_train = 0.0
+        # Test model on training set using mean squared error and r-squared
+        score_mse_ridge_ours_train = model.score(x_train, y_train, scoring_func="mean_squared_error")
         print('Training set mean squared error: {:.4f}'.format(score_mse_ridge_ours_train))
-
-        score_r2_ridge_ours_train = 0.0
+        score_r2_ridge_ours_train = model.score(x_train, y_train, scoring_func="r_squared")
         print('Training set r-squared scores: {:.4f}'.format(score_r2_ridge_ours_train))
 
-        # TODO: Save MSE and R-squared training scores
+        # Save MSE and R-squared training scores
+        scores_mse_ridge_ours_train.append(score_mse_ridge_ours_train)
+        scores_r2_ridge_ours_train.append(score_r2_ridge_ours_train)
 
-        # TODO: Test model on validation set using mean squared error and r-squared
-        score_mse_ridge_ours_val = 0.0
+        # Test model on validation set using mean squared error and r-squared
+        score_mse_ridge_ours_val = model.score(x_val, y_val, scoring_func="mean_squared_error")
         print('Validation set mean squared error: {:.4f}'.format(score_mse_ridge_ours_val))
-
-        score_r2_ridge_ours_val = 0.0
+        score_r2_ridge_ours_val = model.score(x_val, y_val, scoring_func="r_squared")
         print('Validation set r-squared scores: {:.4f}'.format(score_r2_ridge_ours_val))
 
-        # TODO: Save MSE and R-squared validation scores
+        # Save MSE and R-squared validation scores
+        scores_mse_ridge_ours_val.append(score_mse_ridge_ours_val)
+        scores_r2_ridge_ours_val.append(score_r2_ridge_ours_val)
 
-        # TODO: Test model on testing set using mean squared error and r-squared
-        score_mse_ridge_ours_test = 0.0
+        # Test model on testing set using mean squared error and r-squared
+        score_mse_ridge_ours_test = model.score(x_test, y_test, scoring_func="mean_squared_error")
         print('Testing set mean squared error: {:.4f}'.format(score_mse_ridge_ours_test))
-
-        score_r2_ridge_ours_test = 0.0
+        score_r2_ridge_ours_test = model.score(x_test, y_test, scoring_func="r_squared")
         print('Testing set r-squared scores: {:.4f}'.format(score_r2_ridge_ours_test))
 
-        # TODO: Save MSE and R-squared testing scores
+        # Save MSE and R-squared testing scores
+        scores_mse_ridge_ours_test.append(score_mse_ridge_ours_test)
+        scores_r2_ridge_ours_test.append(score_r2_ridge_ours_test)
 
     # Convert each scores to NumPy arrays
     scores_mse_ridge_ours_train = np.array(scores_mse_ridge_ours_train)
@@ -481,9 +538,15 @@ if __name__ == '__main__':
     scores_r2_ridge_ours_val = np.array(scores_r2_ridge_ours_val)
     scores_r2_ridge_ours_test = np.array(scores_r2_ridge_ours_test)
 
-    # TODO: Clip each set of MSE scores between 0 and 40
+    # Clip each set of MSE scores between 0 and 40
+    scores_mse_ridge_ours_train = np.clip(scores_mse_ridge_ours_train, 0.0, 40.0)
+    scores_mse_ridge_ours_val = np.clip(scores_mse_ridge_ours_val, 0.0, 40.0)
+    scores_mse_ridge_ours_test = np.clip(scores_mse_ridge_ours_test, 0.0, 40.0)
 
-    # TODO: Clip each set of R-squared scores between 0 and 1
+    # Clip each set of R-squared scores between 0 and 1
+    scores_r2_ridge_ours_train = np.clip(scores_r2_ridge_ours_train, 0.0, 1.0)
+    scores_r2_ridge_ours_val = np.clip(scores_r2_ridge_ours_val, 0.0, 1.0)
+    scores_r2_ridge_ours_test = np.clip(scores_r2_ridge_ours_test, 0.0, 1.0)
 
     # Create figure for training, validation and testing scores for different features
     n_experiments = scores_mse_ridge_ours_train.shape[0]
@@ -495,21 +558,56 @@ if __name__ == '__main__':
     # Create the first subplot of a 1 by 2 figure to plot MSE for training, validation, testing
     ax = fig.add_subplot(1, 2, 1)
 
-    # TODO: Set x (alpha in log scale) and y values (MSE)
+    # Set x (alpha in log scale) and y values (MSE)
+    x_values = [np.log(np.asarray(alphas) + 1.0)] * n_experiments
+    y_values = [
+        scores_mse_ridge_ours_train,
+        scores_mse_ridge_ours_val,
+        scores_mse_ridge_ours_test,
+    ]
 
-    # TODO: Plot MSE scores for training, validation, testing sets
-    # Set x limits to 0 to max of x_values + 1 and y limits between 0 and 40
-    # Set x label to 'alpha (log scale)' and y label to 'MSE',
+    # Plot MSE scores for training, validation, testing sets
+    #   - Set x limits to 0 to max of x_values + 1 and y limits between 0 and 40
+    #   - Set x label to 'alpha (log scale)' and y label to 'MSE'
+    plot_results(
+        axis=ax,
+        x_values=x_values,
+        y_values=y_values,
+        labels=labels,
+        colors=colors,
+        x_limits=[0.0, np.log(alphas[-1]) + 1],
+        y_limits=[0.0, 40.0],
+        x_label='alphas',
+        y_label='MSE'
+    )
 
     # Create the second subplot of a 1 by 2 figure to plot R-squared for training, validation, testing
     ax = fig.add_subplot(1, 2, 2)
 
-    # TODO: Set x (alpha in log scale) and y values (R-squared)
+    # Set x (alpha in log scale) and y values (R-squared)
+    x_values = [np.log(np.asarray(alphas) + 1.0)] * n_experiments
+    y_values = [
+        scores_r2_ridge_ours_train,
+        scores_r2_ridge_ours_val,
+        scores_r2_ridge_ours_test,
+    ]
 
-    # TODO: Plot R-squared scores for training, validation, testing sets
-    # Set x limits to 0 to max of x_values + 1 and y limits between 0 and 1
-    # Set x label to 'alpha (log scale)' and y label to 'R-squared',
-
-    # TODO: Create super title 'Our Ridge Regression on Training, Validation and Testing Sets'
+    # Plot R-squared scores for training, validation, testing sets
+    #   - Set x limits to 0 to max of x_values + 1 and y limits between 0 and 1
+    #   - Set x label to 'alpha (log scale)' and y label to 'R-squared',
+    plot_results(
+        axis=ax,
+        x_values=x_values,
+        y_values=y_values,
+        labels=labels,
+        colors=colors,
+        x_limits=[0.0, np.log(alphas[-1]) + 1],
+        y_limits=[0.0, 1.0],
+        x_label='alphas',
+        y_label='R-squared'
+    )
+    
+    # Create super title 'Our Ridge Regression on Training, Validation and Testing Sets'
+    plt.suptitle('Our Ridge Regression on Training, Validation and Testing Sets')
 
     plt.show()
