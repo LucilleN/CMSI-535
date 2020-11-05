@@ -26,7 +26,7 @@ Then, the main method performs two experiments to complare our RidgeRegressionCl
 skikit-learn implementation of the RidgeRegression class. To do so, we first initialize an sklearn 
 RidgeRegression model, and then for increasing values of alpha from 10^0 up to 10^5, we train the model on the 
 polynomial-expanded training set, test it on the polynomial-expanded training, validation, and testing sets, and 
-finally plot the MSE and R-squared scores for the different alphas. Then we repeat this 
+finally plot the MSE and R-squared scores for the different alphas. Then we repeat this entire
 training-validation-testing loop for our own implementation of the RidgeRegressionClosedForm class, and plot its 
 MSE and R-squared scores for different alphas. 
 
@@ -184,8 +184,9 @@ class RidgeRegressionClosedForm(object):
         
         self.__weights = w_star
         
-        # Compute loss
+        # Compute loss:
         # l(w) = 1/N * ( (Zw-y)^T * (Zw-y) + lambda * w^T * w )
+        # plug in w_star to get the minimum loss
         Z_w_star_minus_y = np.matmul(Z, w_star) - y
 
         loss_data_fidelity = 1/N * np.matmul(Z_w_star_minus_y.T, Z_w_star_minus_y)
