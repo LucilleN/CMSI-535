@@ -33,9 +33,8 @@ def score_mean_squared_error(model, x, y):
     '''
 
     # Computes the mean squared error
-    predictions = np.squeeze(model.predict(x))
+    predictions = model.predict(x)
     mse = skmetrics.mean_squared_error(predictions, y)
-
     return mse
 
 
@@ -49,7 +48,7 @@ class GradientDescentOptimizer(object):
 
     def __compute_gradients(self, w, x, y, loss_func):
         '''
-        Returns the gradient of the mean squared or half mean squared loss
+        Returns the gradient of the logistic, mean squared or half mean squared loss
 
         Args:
             w : numpy
@@ -59,41 +58,39 @@ class GradientDescentOptimizer(object):
             y : numpy
                 N element groundtruth vector
             loss_func : str
-                loss type either mean_squared', or 'half_mean_squared'
+                loss type either 'mean_squared', or 'half_mean_squared'
 
         Returns:
             numpy : 1 x d gradients
         '''
-
+        N = x.shape[1]
         # TODO: Implements the __compute_gradients function
 
-        # Add bias to x (d x N) -> (d + 1, N)
-        x = np.concatenate([np.ones([1, x.shape[1]]), x], axis=0)
+        # Add bias to x 
+        # (1 x N) + (d x N) -> (d+1 x N)
+        x = np.concatenate((np.ones((1, N)), x), axis=0)
 
-        # gradients for all samples will be (d + 1, N)
-        gradients = np.zeros(x.shape)
+        # gradients for all samples is the size of x, (d+1 x N)
+        gradients = np.zeros(x.shape) 
 
         if loss_func == 'mean_squared':
-            # TODO: Implements gradients for mean squared loss
 
-            # f(w) = 1/N || Xw - y ||^2_2 = 1/N sum_n^N ^w^T x^n - y^n)^2
-            # f'(w) = 1/N sum_n^N 2 * (w^T x^n - y^n) \nabla (w^T x^n - y^n)
-            # f'(w) = 1/N sum_n^N 2 * (w^T x^n - y^n) x^n
-
-            for n in range(x.shape[1]):
-                # x_n : (d + 1 , 1)
-                x_n = np.expand_dims(x[:, n], axis=1)
-
-                # w.T (d + 1, 1)^T \times x_n (d + 1, 1)
+            # MSE: f(w) = 1\N || Xw - y ||_2^2 = 1/N \sum_n^N (w^T x_n - y_n)^2
+            # f'(w) = 1/N sum_n^N 2 * (w^T x - y_n) \nabla (w^T x_n - y)
+            #       = 1/N sum_n^N 2 * (w^T x - y_n) * x_n
+            # use this function to compute gradients for MSE loss function
+            for n in range(N):
+                x_n = x[:, n]
                 prediction = np.matmul(w.T, x_n)
-                gradient = 2 * (prediction - y[n]) * x_n
-                gradients[:, n] = np.squeeze(gradient)
+                gradient_n = 2 * (prediction - y[n]) * x_n
+                gradients[:, n] = gradient_n
 
-                # For the one-liner
-                # gradients[:, n] = 2 * np.squeeze((np.matmul(w.T, x_n) - y[n]) * x_n)
+                # one-liner:
+                # gradients[:, n] = 2 * (np.matmul(w.T, x_n) - y[n]) * x_n
 
-            # Retain the last dimension so that we have (d + 1, 1)
-            return np.mean(gradients, axis=1, keepdims=True)
+            # Accumulated N of these gradients; we want average of all of them
+            # Summing and dividing by N is same as taking the mean
+            return np.mean(gradients, axis=1)
 
         elif loss_func == 'half_mean_squared':
             # TODO: Implements gradients for half mean squared loss
@@ -122,15 +119,12 @@ class GradientDescentOptimizer(object):
             numpy : 1 x d weights
         '''
 
-        # TODO: Implement the optimizer update function
-
         # Computes the gradients for a given loss function
         gradients = self.__compute_gradients(w, x, y, loss_func)
 
         # Update our weights using gradient descent
-        # w^(t + 1) = w^(t) - \alpha \nabla \ell(w^(t))
-
-        # w = w - alpha * self.__compute_gradients(w, x, y, loss_func)
+        # w^(t+1) = w^(t) - \alpha * \nabla \l(w^(t))
+        #         = w^(t) - alpha * gradients
         w = w - alpha * gradients
 
         return w
@@ -163,11 +157,12 @@ class LinearRegressionGradientDescent(object):
             loss_func : str
                 loss function to use
         '''
+        d = x.shape[0]
 
         # TODO: Implement the fit function
 
-        # Initialize the weights (d + 1, 1)
-        self.__weights = np.zeros([x.shape[0] + 1, 1])
+        # Initialize weights (d+1 x 1)
+        self.__weights = np.zeros((d+1, 1))
         self.__weights[0] = 1.0
 
         for i in range(1, t + 1):
@@ -178,10 +173,8 @@ class LinearRegressionGradientDescent(object):
             if (i % 500) == 0:
                 print('Step={}  Loss={:.4f}'.format(i, loss))
 
-            # TODO: Update weights
-            w_i = self.__optimizer.update(
-                self.__weights, x, y, alpha, loss_func=loss_func)
-
+            # Update weights
+            w_i = self.__optimizer.update(self.__weights, x, y, alpha, loss_func)
             self.__weights = w_i
 
     def predict(self, x):
@@ -195,23 +188,19 @@ class LinearRegressionGradientDescent(object):
         Returns:
             numpy : 1 x N vector
         '''
+        N = x.shape[1]
 
-        # TODO: Implements the predict function
+        # Add bias to x; (d x N) -> (d+1 x N)
+        x = np.concatenate((np.ones((1, N)), x), axis=0)
 
-        # Add bias to x (d, N) -> (d + 1, N)
-        x = np.concatenate([np.ones([1, x.shape[1]]), x], axis=0)
+        predictions = np.zeros((1, N))
 
-        # predictions should be (1 , N)
-        predictions = np.zeros([1, x.shape[1]])
-
-        for n in range(x.shape[1]):
-            # x_n : (d + 1, 1)
-            x_n = np.expand_dims(x[:, n], axis=1)
-
+        for n in range(N):
+            x_n = x[:, n]
             # y_hat or h_x = w^T x
-            # w^T (d + 1, 1)^T \times x_n (d + 1, 1)
-            prediction = np.matmul(self.__weights.T, x_n)
-            predictions[:, n] = np.squeeze(prediction)
+            # prediction = np.matmul(self.__weights.T, x_n)
+            prediction = np.dot(self.__weights.T, x_n)
+            predictions[:, n] = prediction
 
         return predictions
 
@@ -304,7 +293,7 @@ if __name__ == '__main__':
     # TODO: Select number of steps (t) to train for mean squared and half mean squared loss
     T = [100, 100]
 
-    # TODO: Convert dataset (N x d) to correct shape (d x N)
+    # Convert dataset (N x d) to correct shape (d x N) for train, val, and test
     x_train = np.transpose(x_train, axes=(1, 0))
     x_val = np.transpose(x_val, axes=(1, 0))
     x_test = np.transpose(x_test, axes=(1, 0))
@@ -313,18 +302,19 @@ if __name__ == '__main__':
 
     for loss_func, alpha, t in zip(loss_funcs, alphas, T):
 
-        # TODO: Initialize linear regression trained with gradient descent
+        # Initialize linear regression trained with gradient descent
         linear_grad_descent = LinearRegressionGradientDescent()
 
         print('Fitting with learning rate (alpha)={:.1E},  t={}'.format(alpha, t))
 
-        # TODO: Train linear regression using gradient descent
+        # Train linear regression using gradient descent
         linear_grad_descent.fit(
             x=x_train,
             y=y_train,
             t=t,
-            alpha=alpha,
-            loss_func=loss_func)
+            alpha=alpha, 
+            loss_func=loss_func
+        )
 
         # TODO: Test model on training set
         score_mse_grad_descent_train = score_mean_squared_error(linear_grad_descent, x_train, y_train)
