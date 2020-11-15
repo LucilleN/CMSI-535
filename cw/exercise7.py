@@ -5,14 +5,55 @@ from sklearn.linear_model import LinearRegression
 
 
 '''
-Name: Doe, John (Please write names in <Last Name, First Name> format)
+Name: Njoo, Lucille
 
-Collaborators: Doe, Jane (Please write names in <Last Name, First Name> format)
+Collaborators: N/A
 
-Collaboration details: Discussed <function name> implementation details with Jane Doe.
+Collaboration details: N/A
 
 Summary:
+
+In this exercise, we implemented the Gradient Descent algorithm for optimization, and 
+used it to train our own LinearRegressionGradientDescent model. We then compared the 
+performance of the scikit-learn LinearRegression model, which uses the closed-form 
+solution to find the optimal weights, to our own implementation of the 
+LinearRegressionGradientDescent model, and trained our own model on different 
+combinations of hyperparameters T (timesteps), alpha (learning rate), and loss function 
+(MSE or half-MSE). The result is that our model performs approximately the same (though 
+a little bit worse) than the scikit-learn model. Also, notably, when we use the 
+half-MSE loss function, the results are exactly the same as using half the learning 
+rate with the regular MSE loss function. This makes sense because the weights are 
+updated using the equation: 
+    w^(t + 1) = w^(t) - alpha * (gradient of loss)
+And so when alpha is halved but the gradient is doubled, the result is exactly the same.
+
 Report your scores here.
+
+Results on diabetes dataset using scikit-learn Linear Regression model
+Training set mean accuracy: 2750.0952
+Validation set mean accuracy: 3665.1559
+Testing set mean accuracy: 3114.5817
+Results on diabetes dataset using Linear Regression trained with gradient descent
+Fitting with learning rate (alpha)=5.0E-01,  t=2000
+Step=500  Loss=2897.2545
+Step=1000  Loss=2783.0061
+Step=1500  Loss=2766.2741
+Step=2000  Loss=2762.8744
+Training set mean accuracy: 2762.8712
+Validation set mean accuracy: 3741.2679
+Testing set mean accuracy: 3113.1787
+Fitting with learning rate (alpha)=1.0E+00,  t=4000
+Step=500  Loss=1448.6273
+Step=1000  Loss=1391.5030
+Step=1500  Loss=1383.1371
+Step=2000  Loss=1381.4372
+Step=2500  Loss=1380.9459
+Step=3000  Loss=1380.7327
+Step=3500  Loss=1380.5947
+Step=4000  Loss=1380.4796
+Training set mean accuracy: 2760.9587
+Validation set mean accuracy: 3763.9527
+Testing set mean accuracy: 3111.1478
 
 '''
 
@@ -65,40 +106,51 @@ class GradientDescentOptimizer(object):
             numpy : 1 x d gradients
         '''
 
-        # TODO: Implements the __compute_gradients function
-
-        # Add bias to x (d x N) -> (d + 1, N)
+        # Add bias to x so that its shape is (d, N) -> (d + 1, N)
         x = np.concatenate([np.ones([1, x.shape[1]]), x], axis=0)
 
-        # gradients for all samples will be (d + 1, N)
+        # Gradients for all samples will be (d + 1, N)
         gradients = np.zeros(x.shape)
 
+        # Regular MSE loss function:
+        #   f(w) = 1/N || Xw - y ||^2_2 
+        #        = 1/N sum_n^N ^w^T x^n - y^n)^2
+
+        # Derivative of MSE loss function:
+        #   f'(w) = 1/N sum_n^N 2 * (w^T x^n - y^n) \nabla (w^T x^n - y^n)
+        #         = 1/N sum_n^N 2 * (w^T x^n - y^n) x^n
+
+        for n in range(x.shape[1]):
+            # x_n : (d + 1 , 1)
+            x_n = np.expand_dims(x[:, n], axis=1)
+
+            # w.T (d + 1, 1)^T \times x_n (d + 1, 1)
+            prediction = np.matmul(w.T, x_n)
+            gradient = 2 * (prediction - y[n]) * x_n
+            gradients[:, n] = np.squeeze(gradient)
+
+            # The same thing as the lines above, but in a one-liner
+            # gradients[:, n] = 2 * np.squeeze((np.matmul(w.T, x_n) - y[n]) * x_n)
+
+        # Retain the last dimension so that we have (d + 1, 1)
+        gradient_with_mse_loss = np.mean(gradients, axis=1, keepdims=True)
+
         if loss_func == 'mean_squared':
-            # TODO: Implements gradients for mean squared loss
-
-            # f(w) = 1/N || Xw - y ||^2_2 = 1/N sum_n^N ^w^T x^n - y^n)^2
-            # f'(w) = 1/N sum_n^N 2 * (w^T x^n - y^n) \nabla (w^T x^n - y^n)
-            # f'(w) = 1/N sum_n^N 2 * (w^T x^n - y^n) x^n
-
-            for n in range(x.shape[1]):
-                # x_n : (d + 1 , 1)
-                x_n = np.expand_dims(x[:, n], axis=1)
-
-                # w.T (d + 1, 1)^T \times x_n (d + 1, 1)
-                prediction = np.matmul(w.T, x_n)
-                gradient = 2 * (prediction - y[n]) * x_n
-                gradients[:, n] = np.squeeze(gradient)
-
-                # For the one-liner
-                # gradients[:, n] = 2 * np.squeeze((np.matmul(w.T, x_n) - y[n]) * x_n)
-
-            # Retain the last dimension so that we have (d + 1, 1)
-            return np.mean(gradients, axis=1, keepdims=True)
+            return gradient_with_mse_loss
 
         elif loss_func == 'half_mean_squared':
-            # TODO: Implements gradients for half mean squared loss
+            # Half Mean Squared Error is just Mean Squared Error divided by 2
+            # so that the derivative is not multiplied by that constant 2
 
-            return np.zeros_like(w)
+            # Half MSE loss function: 
+            #   f(w) = 1/2N || Xw - y ||^2_2 
+            #        = 1/2N sum_n^N (w^T x^n - y^n)^2
+
+            # Derivative of MSE loss function:
+            #   f'(w) = 1/2N sum_n^N 2 * (w^T x^n - y^n) \nabla (w^T x^n - y^n)
+            #         = 1/2N sum_n^N 2 * (w^T x^n - y^n) x^n
+            return gradient_with_mse_loss / 2
+
         else:
             raise ValueError('Supported losses: mean_squared, or half_mean_squared')
 
@@ -121,16 +173,13 @@ class GradientDescentOptimizer(object):
         Returns:
             numpy : 1 x d weights
         '''
-
-        # TODO: Implement the optimizer update function
-
         # Computes the gradients for a given loss function
         gradients = self.__compute_gradients(w, x, y, loss_func)
 
         # Update our weights using gradient descent
-        # w^(t + 1) = w^(t) - \alpha \nabla \ell(w^(t))
-
-        # w = w - alpha * self.__compute_gradients(w, x, y, loss_func)
+        #   w^(t + 1) = w^(t) - \alpha \nabla \ell(w^(t))
+        # Which is the same as: 
+        #   w = w - alpha * self.__compute_gradients(w, x, y, loss_func)
         w = w - alpha * gradients
 
         return w
@@ -164,21 +213,18 @@ class LinearRegressionGradientDescent(object):
                 loss function to use
         '''
 
-        # TODO: Implement the fit function
-
         # Initialize the weights (d + 1, 1)
         self.__weights = np.zeros([x.shape[0] + 1, 1])
         self.__weights[0] = 1.0
 
         for i in range(1, t + 1):
 
-            # TODO: Compute loss function
-            loss = 0.0
+            loss = self.__compute_loss(x, y, loss_func)
 
             if (i % 500) == 0:
                 print('Step={}  Loss={:.4f}'.format(i, loss))
 
-            # TODO: Update weights
+            # Update weights
             w_i = self.__optimizer.update(
                 self.__weights, x, y, alpha, loss_func=loss_func)
 
@@ -195,8 +241,6 @@ class LinearRegressionGradientDescent(object):
         Returns:
             numpy : 1 x N vector
         '''
-
-        # TODO: Implements the predict function
 
         # Add bias to x (d, N) -> (d + 1, N)
         x = np.concatenate([np.ones([1, x.shape[1]]), x], axis=0)
@@ -230,19 +274,34 @@ class LinearRegressionGradientDescent(object):
         Returns:
             float : loss
         '''
+        N = x.shape[1]
 
-        # TODO: Implements the __compute_loss function
+        # Add bias to x so that its shape is (d, N) -> (d + 1, N)
+        x = np.concatenate([np.ones([1, x.shape[1]]), x], axis=0)
+
+        # Regular MSE loss function:
+        # f(w) = 1/N || Xw - y ||^2_2 
+        #      = 1/N sum_n^N (w^T x^n - y^n)^2
+
+        losses = []
+
+        for n in range(N):
+            # x_n : (d + 1 , 1)
+            x_n = np.expand_dims(x[:, n], axis=1)
+
+            prediction = np.matmul(self.__weights.T, x_n)
+            loss = (prediction - y[n]) ** 2
+            losses = np.append(losses, loss)
+
+        mse_loss = np.mean(losses)
 
         if loss_func == 'mean_squared':
-            # TODO: Implements loss for mean squared loss
-            pass
+            return mse_loss
         elif loss_func == 'half_mean_squared':
-            # TODO: Implements loss for half mean squared loss
-            pass
+            return mse_loss / 2
         else:
             raise ValueError('Supported losses: mean_squared, or half_mean_squared')
-
-        return 0.0
+        
 
 if __name__ == '__main__':
 
@@ -298,13 +357,13 @@ if __name__ == '__main__':
     # Loss functions to minimize
     loss_funcs = ['mean_squared', 'half_mean_squared']
 
-    # TODO: Select learning rates (alpha) for mean squared and half mean squared loss
-    alphas = [1.0, 1.0]
+    # Select learning rates (alpha) for mean squared and half mean squared loss
+    alphas = [0.5, 1.0]
 
-    # TODO: Select number of steps (t) to train for mean squared and half mean squared loss
-    T = [100, 100]
+    # Select number of steps (t) to train for mean squared and half mean squared loss
+    T = [2000,4000]
 
-    # TODO: Convert dataset (N x d) to correct shape (d x N)
+    # Convert dataset (N x d) to correct shape (d x N)
     x_train = np.transpose(x_train, axes=(1, 0))
     x_val = np.transpose(x_val, axes=(1, 0))
     x_test = np.transpose(x_test, axes=(1, 0))
@@ -313,12 +372,12 @@ if __name__ == '__main__':
 
     for loss_func, alpha, t in zip(loss_funcs, alphas, T):
 
-        # TODO: Initialize linear regression trained with gradient descent
+        # Initialize linear regression trained with gradient descent
         linear_grad_descent = LinearRegressionGradientDescent()
 
         print('Fitting with learning rate (alpha)={:.1E},  t={}'.format(alpha, t))
 
-        # TODO: Train linear regression using gradient descent
+        # Train linear regression using gradient descent
         linear_grad_descent.fit(
             x=x_train,
             y=y_train,
@@ -326,14 +385,14 @@ if __name__ == '__main__':
             alpha=alpha,
             loss_func=loss_func)
 
-        # TODO: Test model on training set
+        # Test model on training set
         score_mse_grad_descent_train = score_mean_squared_error(linear_grad_descent, x_train, y_train)
         print('Training set mean accuracy: {:.4f}'.format(score_mse_grad_descent_train))
 
-        # TODO: Test model on validation set
-        score_mse_grad_descent_val = 0.0
+        # Test model on validation set
+        score_mse_grad_descent_val = score_mean_squared_error(linear_grad_descent, x_val, y_val)
         print('Validation set mean accuracy: {:.4f}'.format(score_mse_grad_descent_val))
 
-        # TODO: Test model on testing set
-        score_mse_grad_descent_test = 0.0
+        # Test model on testing set
+        score_mse_grad_descent_test = score_mean_squared_error(linear_grad_descent, x_test, y_test)
         print('Testing set mean accuracy: {:.4f}'.format(score_mse_grad_descent_test))
