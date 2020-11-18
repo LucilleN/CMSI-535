@@ -102,6 +102,7 @@ class PrincipalComponentAnalysis(object):
         '''
 
         # TODO: Center the data
+        # B = X - mu
 
         return np.zeros_like(X)
 
@@ -130,12 +131,35 @@ class PrincipalComponentAnalysis(object):
                 d x d covariance matrix
 
         Returns:
-            numpy : d x k eigenvectors
+            numpy : d x k eigenvectors (this is W)
         '''
 
-        # TODO: Obtain the top k eigenvectors
+        # Obtain the top k eigenvectors
+        
+        # Make sure that k is less than or equal to d 
+        # (d here is D on the slides, k is little d on the slides)
+        assert self.__k <= C.shape[0]
 
-        return np.zeros_like(C)
+        # Eigen decomposition: V^{-1} C V = \Sigma V
+        S, V = np.linalg.eig(C)
+
+        # S is singular values of eigenvalues
+        # We want to sort them in descending order
+        # and we care about the positions of the new ordering
+        # Use np.argsort, which sorts the indexes in ascending order 
+        # We want descending order, so we reverse it with [::-1]
+        # order contains the sorted indices of the eigenvalues, 
+        # which corresponds to the eigenvectors
+        order = np.argsort(S)[::-1]
+
+        # select the top k eigenvectors
+        # V[:, order] rearranges V from largest to smallest based on S, the eigenvalues
+        # Grab from 0 up to k eigenvectors
+        # now W is (d x k)
+        # This is the latent vector we want to learn
+        W = V[:, order][:, 0:self.__k]
+
+        return W
 
     def project_to_subspace(self, X):
         '''
@@ -148,10 +172,21 @@ class PrincipalComponentAnalysis(object):
                 number of eigenvectors to keep
 
         Returns:
-            numpy : N x k feature vector
+            numpy : N x k feature vector (this is Z)
         '''
 
         # TODO: Computes transformation to lower dimension and project to subspace
+
+        # 1. Center your data
+
+        # 2. Compute the covariance matrix
+
+        # 3. Find the weights (W) that take us from d to k dimensions (fetch_weights)
+        #    and set them to self.__weights
+
+        # 4. Project X down to k dimensions using the weights (W) to yield Z
+
+        # 5. Return Z
 
         return X
 
@@ -164,7 +199,7 @@ class PrincipalComponentAnalysis(object):
                 N x k latent vector
 
         Returns:
-            numpy : N x d feature vector
+            numpy : N x d feature vector (returns X hat)
         '''
 
         # TODO: Reconstruct the original feature vector
@@ -184,6 +219,32 @@ if __name__ == '__main__':
     labels_iris = ('Setosa', 'Versicolour', 'Virginica')
     markers_iris = ('o', '^', '+')
 
+    # TODO: Visualize the iris dataset by truncating the last dimension
+    
+    # Iris dataset is (150 x 4) = (N x d), so we remove the last dimension
+    X_iris_trunc = X_iris[:, 0:3]
+
+    # Find every sample of X that belongs to class 0, class 1, and class 2 separately
+    # Together N_class0 + N_class1 + N_class2 = N
+    X_iris_trunc_class_split = [
+        # This grabs (N_class0 x 3)
+        X_iris_trunc[np.where(y_iris == 0)[0], :],
+        # This grabs (N_class1 x 3)
+        X_iris_trunc[np.where(y_iris == 1)[0], :],
+        # This grabs (N_class2 x 3)
+        X_iris_trunc[np.where(y_iris == 2)[0], :]
+    ]
+
+    plot_scatters(
+        X=X_iris_trunc_class_split,
+        colors=colors_iris,
+        labels=labels_iris,
+        markers=markers_iris,
+        title='Iris Dataset Truncated By Last Dimension',
+        axis_names=['x1', 'x2', 'x3'],
+        plot_3d=True
+    )
+    
     # TODO: Initialize Principal Component Analysis instance for k = 3
 
 
