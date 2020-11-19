@@ -14,6 +14,26 @@ Collaboration details: N/A
 
 Summary:
 
+In this exercise, we implemented a PrincipalComponentAnalysis class with methods for 
+projecting a given dataset into a lower-dimension subspace, and for reconstructing the 
+original feature vector from the latent subspace. To do so, we used the PCA algorithm to 
+project to the subspace, by first centering the data to form B, then calculating B's 
+covariance matrix C, then using the covariance matrix C to fetch the top k eigenvectors 
+and form our weights W, and finally multiplying the centered data B by the weights W to 
+form the latent vector Z. We reverse the process to generate the original feature vector 
+X_hat by multiplying the latent vector Z by the weights W and adding the average back in. 
+
+In our main method, we first visualize the Iris dataset by simply truncating the last 
+(fourth) dimension. We then compare this to the visualizations of two lower-dimension 
+feature vectors created with our PrincipalComponentAnalysis class using k=3 dimensions and 
+then k=2 dimensions. Finally, we use the PrincipalComponentAnalysis class to project the 
+Iris dataset into a range of lower dimensions, from k=4 to k=1, and reconstruct the 
+dataset from those latent vectors in order to calculate the mean squared error between 
+X_hat and the original dataset. We find that k=4 has an MSE of 0 since it did not perform 
+any dimensionality reduction, and the MSE scores increase as k decreases. 
+
+Report your scores here:
+
 MSE score with k=4: 0.0000
 MSE score with k=3: 0.0059
 MSE score with k=2: 0.0253
