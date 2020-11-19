@@ -6,14 +6,18 @@ from sklearn import datasets as skdata
 
 
 '''
-Name: Doe, John (Please write names in <Last Name, First Name> format)
+Name: Njoo, Lucille
 
-Collaborators: Doe, Jane (Please write names in <Last Name, First Name> format)
+Collaborators: N/A
 
-Collaboration details: Discussed <function name> implementation details with Jane Doe.
+Collaboration details: N/A
 
 Summary:
-Report your scores here.
+
+MSE score with k=4: 0.0000
+MSE score with k=3: 0.0059
+MSE score with k=2: 0.0253
+MSE score with k=1: 0.0856
 
 '''
 
@@ -101,10 +105,15 @@ class PrincipalComponentAnalysis(object):
             numpy : N x d centered feature vector
         '''
 
-        # TODO: Center the data
+        # Center the data
         # B = X - mu
 
-        return np.zeros_like(X)
+        mu = np.mean(X, axis=0)
+        self.__mean = mu
+
+        B = X - mu
+
+        return B
 
     def __covariance_matrix(self, X):
         '''
@@ -118,9 +127,13 @@ class PrincipalComponentAnalysis(object):
             numpy : d x d covariance matrix
         '''
 
-        # TODO: Compute the covariance matrix
+        # Compute the covariance matrix
+        
+        N = X.shape[0]
 
-        return np.zeros([X.shape[1], X.shape[1]])
+        C = 1 / (N-1) * np.matmul(X.T, X)
+
+        return C
 
     def __fetch_weights(self, C):
         '''
@@ -175,20 +188,24 @@ class PrincipalComponentAnalysis(object):
             numpy : N x k feature vector (this is Z)
         '''
 
-        # TODO: Computes transformation to lower dimension and project to subspace
+        # Computes transformation to lower dimension and project to subspace
 
-        # 1. Center your data
+        # 1. Center the data
+        B = self.__center(X)
 
         # 2. Compute the covariance matrix
+        C = self.__covariance_matrix(B)
 
         # 3. Find the weights (W) that take us from d to k dimensions (fetch_weights)
         #    and set them to self.__weights
+        W = self.__fetch_weights(C)
+        self.__weights = W
 
-        # 4. Project X down to k dimensions using the weights (W) to yield Z
+        # 4. Project X down to k dimensions using the weights (W) to yield Z: Z = BW
+        Z = np.matmul(B, W)
 
         # 5. Return Z
-
-        return X
+        return Z
 
     def reconstruct_from_subspace(self, Z):
         '''
@@ -202,9 +219,11 @@ class PrincipalComponentAnalysis(object):
             numpy : N x d feature vector (returns X hat)
         '''
 
-        # TODO: Reconstruct the original feature vector
+        # Reconstruct the original feature vector
+        # X^hat = Z W.T + mu
+        X_hat = np.matmul(Z, self.__weights.T) + self.__mean
 
-        return Z
+        return X_hat
 
 
 if __name__ == '__main__':
@@ -219,7 +238,7 @@ if __name__ == '__main__':
     labels_iris = ('Setosa', 'Versicolour', 'Virginica')
     markers_iris = ('o', '^', '+')
 
-    # TODO: Visualize the iris dataset by truncating the last dimension
+    # Visualize the iris dataset by truncating the last dimension
     
     # Iris dataset is (150 x 4) = (N x d), so we remove the last dimension
     X_iris_trunc = X_iris[:, 0:3]
@@ -245,17 +264,51 @@ if __name__ == '__main__':
         plot_3d=True
     )
     
-    # TODO: Initialize Principal Component Analysis instance for k = 3
+    # Initialize Principal Component Analysis instance for k = 3
+    pca_k3 = PrincipalComponentAnalysis(k=3)
+    Z_k3 = pca_k3.project_to_subspace(X_iris)
 
+    # Visualize iris dataset in 3 dimension
+    X_iris_pca_k3_class_split = [
+        # This grabs (N_class0 x 3)
+        Z_k3[np.where(y_iris == 0)[0], :],
+        # This grabs (N_class1 x 3)
+        Z_k3[np.where(y_iris == 1)[0], :],
+        # This grabs (N_class2 x 3)
+        Z_k3[np.where(y_iris == 2)[0], :]
+    ]
+    plot_scatters(
+        X=X_iris_pca_k3_class_split,
+        colors=colors_iris,
+        labels=labels_iris,
+        markers=markers_iris,
+        title='Iris Dataset with PCA for k=3',
+        axis_names=['x1', 'x2', 'x3'],
+        plot_3d=True
+    )
 
-    # TODO: Visualize iris dataset in 3 dimension
+    # Initialize Principal Component Analysis instance for k = 2
+    pca_k2 = PrincipalComponentAnalysis(k=2)
+    Z_k2 = pca_k2.project_to_subspace(X_iris)
 
-
-    # TODO: Initialize Principal Component Analysis instance for k = 2
-
-
-    # TODO: Visualize iris dataset in 2 dimensions
-
+    # Visualize iris dataset in 2 dimensions
+    X_iris_pca_k2_class_split = [
+        # This grabs (N_class0 x 2)
+        Z_k2[np.where(y_iris == 0)[0], :],
+        # This grabs (N_class1 x 2)
+        Z_k2[np.where(y_iris == 1)[0], :],
+        # This grabs (N_class2 x 2)
+        Z_k2[np.where(y_iris == 2)[0], :]
+    ]
+    plot_scatters(
+        X=X_iris_pca_k2_class_split,
+        colors=colors_iris,
+        labels=labels_iris,
+        markers=markers_iris,
+        title='Iris Dataset with PCA for k=2',
+        axis_names=['x1', 'x2'],
+        plot_3d=False
+    )
 
     # Possible number of eigenvectors to keep
     K = [4, 3, 2, 1]
@@ -264,14 +317,18 @@ if __name__ == '__main__':
     mse_scores = []
 
     for k in K:
-        # TODO: Initialize PrincipalComponentAnalysis instance for k
+        # Initialize PrincipalComponentAnalysis instance for k
+        pca = PrincipalComponentAnalysis(k=k)
 
-        # TODO: Project the data to subspace
+        # Project the data to subspace
+        Z = pca.project_to_subspace(X_iris)
 
-        # TODO: Reconstruct the original data
+        # Reconstruct the original data
+        X_hat = pca.reconstruct_from_subspace(Z)
 
-        # TODO: Measures mean squared error between original data and reconstructed data
-        mse_score = 0.0
+        # Measures mean squared error between original data and reconstructed data
+        mse_score = skmetrics.mean_squared_error(X_hat, X_iris)
+        print("MSE score with k={}: {:.4f}".format(k, mse_score))
 
         # Save MSE score
         mse_scores.append(mse_score)
