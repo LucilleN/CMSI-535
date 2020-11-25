@@ -6,14 +6,17 @@ from sklearn import datasets as skdata
 
 
 '''
-Name: Doe, John (Please write names in <Last Name, First Name> format)
+Name: Njoo, Lucille
 
-Collaborators: Doe, Jane (Please write names in <Last Name, First Name> format)
+Collaborators: N/A
 
-Collaboration details: Discussed <function name> implementation details with Jane Doe.
+Collaboration details: N/A
 
 Summary:
-Report your scores here.
+
+In this exercise, we visualized the MSE loss on reconstructed datasets created with
+PCAs using values of k from 1 to 64 on the original digits dataset. We then used PCA 
+to generate new samples of synthesized handwritten 2's. 
 
 '''
 
@@ -49,6 +52,7 @@ def plot_images(X, n_row, n_col, title):
         plt.box(False)
         plt.axis('off')
 
+
 def compute_eigenvalues(X, sorted=False):
     '''
     Computes eigenvalues for a dataset X
@@ -64,9 +68,29 @@ def compute_eigenvalues(X, sorted=False):
             d element array
     '''
 
-    # TODO: Compute eigenvalues of a dataset X
+    # Compute eigenvalues of a dataset X
 
-    pass
+    # Compute the mean along axis 0 (axis 0 refers to the # of dif data samples)
+    X_mean = np.mean(X, axis=0)
+
+    # Center the data
+    B = X - X_mean
+
+    # Compute covariance: C = 1/(N-1) B^T B
+    N = X.shape[0]
+    C = 1.0 / (N - 1) * np.matmul(B.T, B)
+
+    # Eigen decomposition
+    S, _ = np.linalg.eig(C)
+
+    if sorted:
+        # Sort the eigenvalues in descending order
+        order = np.argsort(S)[::-1]
+
+        S = S[order]
+
+    return S
+
 
 def plot_eigenvalues(X):
     '''
@@ -77,7 +101,7 @@ def plot_eigenvalues(X):
             N x d numpy array
     '''
 
-    # TODO: Compute eigenvalues and sort them
+    # Compute eigenvalues and sort them
     S_sorted = compute_eigenvalues(X, sorted=True)
 
     # Plot eigenvales in descending order
@@ -94,6 +118,8 @@ def plot_eigenvalues(X):
 '''
 Implementation of Principal Component Analysis (PCA) for dimensionality reduction
 '''
+
+
 class PrincipalComponentAnalysis(object):
 
     def __init__(self, k):
@@ -121,8 +147,15 @@ class PrincipalComponentAnalysis(object):
             numpy : N x d centered feature vector
         '''
 
-        # TODO: Center the data
-        pass
+        # Compute the mean
+        X_mean = np.mean(X, axis=0)
+
+        # Store the mean to use during reconstruction
+        self.__mean = X_mean
+
+        # Center the data
+        B = X - X_mean
+        return B
 
     def __covariance_matrix(self, X):
         '''
@@ -136,8 +169,11 @@ class PrincipalComponentAnalysis(object):
             numpy : d x d covariance matrix
         '''
 
-        # TODO: Compute the covariance matrix
-        pass
+        # Compute the covariance matrix
+        N = X.shape[0]
+        C = 1.0 / (N - 1) * np.matmul(X.T, X)
+
+        return C
 
     def __fetch_weights(self, C):
         '''
@@ -151,8 +187,26 @@ class PrincipalComponentAnalysis(object):
             numpy : d x k eigenvectors
         '''
 
-        # TODO: Obtain the top k eigenvectors
-        pass
+        # Obtain the top k eigenvectors
+
+        # Make sure that we have k less than d (the shape of C is d x d)
+        assert self.__k <= C.shape[0]
+
+        # Eigen decomposition
+        S, V = np.linalg.eig(C)
+
+        # Sort the eigenvalues in descending order
+        order = np.argsort(S)[::-1]
+
+        # Store the sorted eigenvalues for generating new samples
+        self.__eigenvalues = S[order]
+
+        W = V[:, order][:, 0:self.__k]
+
+        # Store weights
+        self.__weights = W
+
+        return W
 
     def project_to_subspace(self, X):
         '''
@@ -168,9 +222,21 @@ class PrincipalComponentAnalysis(object):
             numpy : N x k feature vector
         '''
 
-        # TODO: Computes transformation to lower dimension and project to subspace
+        # Computes transformation to lower dimension and project to subspace
 
-        pass
+        # Center the data
+        B = self.__center(X)
+
+        # Compute covariance matrix
+        C = self.__covariance_matrix(B)
+
+        # Obtain the weights to project to subspace
+        W = self.__fetch_weights(C)
+
+        # Project B to subspace using the weights
+        Z = np.matmul(B, W)
+
+        return Z
 
     def reconstruct_from_subspace(self, Z):
         '''
@@ -184,30 +250,45 @@ class PrincipalComponentAnalysis(object):
             numpy : N x d feature vector
         '''
 
-        # TODO: Reconstruct the original feature vector
+        # Reconstruct the original feature vector
+        X_hat = np.matmul(Z, self.__weights.T) + self.__mean
 
-        pass
+        return X_hat
 
-    def generate_new_samples(self, Z):
+    def generate_new_samples(self, Z, n_sample):
         '''
         Generates new data points by sampling from Z
 
         Args:
             Z : numpy
                 N x k latent vector
+            n_sample: int
 
         Returns:
             numpy : N x d feature vector
         '''
 
-        # TODO: Generate new samples
+        # Generate new samples
 
-        return Z
+        # We need the eigenvalues so we can sample from N(0, sigma^2)
+        # Eigenvalues S = sigma^2
+
+        # np.random.normal(mean, stdev, shape)
+        # stdev = sqrt(sigma^2)
+        # We want 9 samples of k dimensions: (n_sample x k)
+        Z_sample_digits_2s = np.random.normal(
+            0.0, np.sqrt(self.__eigenvalues), (n_sample, Z.shape[1]))
+
+        # This gives us X_hat which is (n_sample x d) since Z is (n_sample x k) and we project
+        # back from k dimensions to d dimensions
+        X_hat = self.reconstruct_from_subspace(Z_sample_digits_2s)
+
+        return X_hat
 
 
 if __name__ == '__main__':
 
-    # Load the iris dataset 1797 samples of 8 by 8 dimensions
+    # Load the digits dataset 1797 samples of 8 by 8 dimensions
     digits_dataset = skdata.load_digits()
     X_digits = digits_dataset.data
     y_digits = digits_dataset.target
@@ -216,33 +297,54 @@ if __name__ == '__main__':
     PCA for handwritten digits reconstruction
     '''
 
-    # TODO: Compute the number of dimensions in the dataset
+    # Compute the number of dimensions in the dataset: (N, 8, 8) or (N, 8 * 8) = (N, 64)
+    # Multiply the dimensions of shape everywhere but in 0th index
+    # 8 * 8 = 64
+    n_dim = np.prod(X_digits.shape[1:])
 
-    # TODO: Reshape handwritten digits dataset to (N, 8, 8)
+    # Reshape handwritten digits dataset to (N, 8, 8)
+    X_digits = np.reshape(X_digits, (-1, 8, 8))
 
-    # TODO: Plot 3 x 3 panel of handwritten digits and name is 'Handwritten digits dataset'
+    # Plot 3 x 3 panel of handwritten digits and name is 'Handwritten digits dataset'
+    plot_images(
+        X=X_digits,
+        n_row=3,
+        n_col=3,
+        title='Handwritten digits dataset'
+    )
 
-    # TODO: Vectorize handwritten digits dataset
+    # Vectorize handwritten digits dataset: (N x 8 x 8) -> (N x 64)
+    X_digits = np.reshape(X_digits, (-1, n_dim))
 
-    # TODO: Plot 9 x 1 panel of handwritten digits and name is 'Vectorized handwritten digits dataset'
+    # Plot 9 x 1 panel of handwritten digits and name is 'Vectorized handwritten digits dataset'
+    plot_images(
+        X=X_digits,
+        n_row=9,
+        n_col=1,
+        title='Handwritten digits dataset'
+    )
 
-    # TODO: Plot eigenvalues for digits dataset
+    # Plot eigenvalues for digits dataset
+    plot_eigenvalues(X_digits)
 
-    # TODO: Select K from 1 to max number of dimensions
-    K = []
+    # Select K from 1 to max number of dimensions
+    K = range(1, n_dim + 1)  # [1, 2, 3, ... , 64]
 
     # MSE scores to keep track of loss from compression
     mse_scores = []
 
     for k in K:
-        # TODO: Initialize PrincipalComponent
+        # Initialize PrincipalComponent
+        pca = PrincipalComponentAnalysis(k=k)
 
-        # TODO: Project the data to subspace
+        # Project the data to subspace
+        Z_digits = pca.project_to_subspace(X_digits)
 
-        # TODO: Reconstruct the original data
+        # Reconstruct the original data
+        X_hat_digits = pca.reconstruct_from_subspace(Z_digits)
 
-        # TODO: Measures mean squared error between original data and reconstructed data
-        mse_score = 0
+        # Measures mean squared error between original data and reconstructed data
+        mse_score = skmetrics.mean_squared_error(X_digits, X_hat_digits)
 
         # Save MSE score
         mse_scores.append(mse_score)
@@ -261,21 +363,42 @@ if __name__ == '__main__':
     PCA as a generative model
     '''
 
-    # TODO: Select all 2's from the digit dataset
+    # Select all 2's from the digit dataset
+    idx = np.where(y_digits == 2)[0]
+    X_digits_2s = X_digits[idx, :]
 
-    # TODO: Reshape handwritten digits dataset of 2s to (N, 8, 8)
+    # Reshape handwritten digits dataset of 2s to (N, 8, 8)
+    X_digits_2s = np.reshape(X_digits_2s, (-1, 8, 8))
 
-    # TODO: Plot 3 x 3 panel of handwritten digits and name is 'Handwritten digits dataset of 2s'
+    # Plot 3 x 3 panel of handwritten digits and name is 'Handwritten digits dataset of 2s'
+    plot_images(
+        X=X_digits_2s,
+        n_row=3,
+        n_col=3,
+        title='Handwritten digits dataset of 2s'
+    )
 
-    # TODO: Vectorize handwritten digits dataset
+    # Vectorize handwritten digits dataset: (N x 64)
+    X_digits_2s = np.reshape(X_digits_2s, (-1, n_dim))
 
-    # TODO: Compute PCA and keep all principal components
+    # Compute PCA and keep all principal components
+    pca_digits_2s = PrincipalComponentAnalysis(k=n_dim)
 
-    # TODO: Sample from subspace to generate a new Z vector of 9 data points
+    # Sample from subspace to generate a new Z vector of 9 data points
+    Z_digits_2s = pca_digits_2s.project_to_subspace(X_digits_2s)
 
-    # TODO: Generate novel samples
+    # Generate novel samples
+    X_hat_digits_2s = pca_digits_2s.generate_new_samples(
+        Z_digits_2s, n_sample=20)
+    X_hat_digits_2s = np.reshape(X_hat_digits_2s, (-1, 8, 8))
 
-    # TODO: Plot 3 x 3 panel of handwritten digits of newly generated data
+    # Plot 3 x 3 panel of handwritten digits of newly generated data
+    plot_images(
+        X=X_hat_digits_2s,
+        n_row=3,
+        n_col=3,
+        title='Synthesized handwritten digits dataset of 2s'
+    )
 
     # Show plots
     plt.show()
