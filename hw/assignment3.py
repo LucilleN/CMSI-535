@@ -332,6 +332,10 @@ class RidgeRegressionGradientDescent(object):
             loss, loss_data_fidelity, loss_regularization = self.__compute_loss(x, y, lambda_weight_decay)
 
             if (time_step % 500) == 0:
+                print("time step: {}".format(time_step))
+                print("loss: {}".format(loss))
+                print("loss_data_fidelity: {}".format(loss_data_fidelity))
+                print("loss_regularization: {}".format(loss_regularization))
                 print('Step={:5}  Loss={:.4f}  Data Fidelity={:.4f}  Regularization={:.4f}'.format(
                     time_step, loss, loss_data_fidelity, loss_regularization))
 
@@ -420,7 +424,7 @@ class RidgeRegressionGradientDescent(object):
             data_fidelity_losses = np.append(data_fidelity_losses, current_data_fidelity_loss)
 
         loss_data_fidelity = np.mean(data_fidelity_losses)
-        loss_regularization = lambda_weight_decay / N * np.matmul(self.__weights.T, self.__weights)
+        loss_regularization = lambda_weight_decay / N * np.matmul(self.__weights.T, self.__weights)[0][0] # todo this is messy
         loss = loss_data_fidelity + loss_regularization
 
         return loss, loss_data_fidelity, loss_regularization
@@ -504,7 +508,7 @@ if __name__ == '__main__':
     learning_rates = [0.1, 0.1, 0.1, 0.1]
 
     # TODO: Select number of steps (t) to train
-    T = [10, 10, 10, 10]
+    T = [8000, 5000, 20000, 15000]
 
     # TODO: Select beta for momentum (do not replace None)
     betas = [None, 0.05, None, 0.05]
