@@ -6,11 +6,11 @@ from sklearn.linear_model import Ridge as RidgeRegression
 
 
 '''
-Name: Doe, John (Please write names in <Last Name, First Name> format)
+Name: Njoo, Lucille
 
-Collaborators: Doe, Jane (Please write names in <Last Name, First Name> format)
+Collaborators: N/A
 
-Collaboration details: Discussed <function name> implementation details with Jane Doe.
+Collaboration details: N/A
 
 Summary:
 
@@ -32,22 +32,22 @@ Training set mean squared error: 2749.2155
 Validation set mean squared error: 3722.5782
 Testing set mean squared error: 3169.6860
 Results on using Ridge Regression using gradient descent variants
-Fitting with gradient_descent using learning rate=0.0E+00,  t=1
-Training set mean squared error: 0.0000
-Validation set mean squared error: 0.0000
-Testing set mean squared error: 0.0000
-Fitting with momentum_gradient_descent using learning rate=0.0E+00,  t=1
-Training set mean squared error: 0.0000
-Validation set mean squared error: 0.0000
-Testing set mean squared error: 0.0000
-Fitting with stochastic_gradient_descent using learning rate=0.0E+00,  t=1
-Training set mean squared error: 0.0000
-Validation set mean squared error: 0.0000
-Testing set mean squared error: 0.0000
-Fitting with momentum_stochastic_gradient_descent using learning rate=0.0E+00,  t=1
-Training set mean squared error: 0.0000
-Validation set mean squared error: 0.0000
-Testing set mean squared error: 0.0000
+Fitting with gradient_descent using learning rate=1.0E-01, t=10
+Training set mean squared error: 5706.2191
+Validation set mean squared error: 5539.8455
+Testing set mean squared error: 7371.7854
+Fitting with momentum_gradient_descent using learning rate=1.0E-01, t=10
+Training set mean squared error: 5706.3651
+Validation set mean squared error: 5541.1250
+Testing set mean squared error: 7366.5416
+Fitting with stochastic_gradient_descent using learning rate=1.0E-01, t=10
+Training set mean squared error: 25841.8291
+Validation set mean squared error: 24473.3987
+Testing set mean squared error: 32345.2797
+Fitting with momentum_stochastic_gradient_descent using learning rate=1.0E-01, t=10
+Training set mean squared error: 17087.4906
+Validation set mean squared error: 17860.2085
+Testing set mean squared error: 15073.6718
 '''
 
 
@@ -99,9 +99,38 @@ class GradientDescentOptimizer(object):
             numpy : 1 x d gradients
         '''
 
-        # TODO: Implements the __compute_gradients function
+        # Implement the __compute_gradients function
 
-        return np.zeros_like(w)
+        # Add bias to x so that its shape is (d, N) -> (d + 1, N)
+        x = np.concatenate([np.ones([1, x.shape[1]]), x], axis=0)
+
+        # Gradients for all samples will be (d + 1, N)
+        gradients = np.zeros(x.shape)
+
+        # MSE loss for Ridge Regression:
+        #   f(w) = 1/N || Xw - y ||^2_2 + lambda/N ||w||^2_2
+        #        = 1/N sum_n^N (w^T x^n - y^n)^2 + lambda/N (w^T w)
+        # Derivative of MSE loss for Ridge Regression:
+        #   f'(w) = 1/N sum_n^N 2 * (w^T x^n - y^n) \nabla (w^T x^n - y^n) + (2 * lambda/N * w)
+        #         = 1/N sum_n^N 2 * (w^T x^n - y^n) x^n + (2 * lambda/N * w)
+
+        N = x.shape[1]
+        # Compute summation part
+        for n in range(N):
+            # x_n : (d + 1 , 1)
+            x_n = np.expand_dims(x[:, n], axis=1)
+
+            # w.T (d + 1, 1)^T  *  x_n (d + 1, 1)
+            prediction = np.matmul(w.T, x_n)
+            gradient = 2 * (prediction - y[n]) * x_n
+            gradients[:, n] = np.squeeze(gradient)
+
+         # Retain the last dimension so that we have (d + 1, 1)
+        gradient_with_mse_only = np.mean(gradients, axis=1, keepdims=True)
+
+        gradient_with_lambda = gradient_with_mse_only + 2 * lambda_weight_decay / N * w
+
+        return gradient_with_lambda
 
     def __cube_root_decay(self, time_step):
         '''
@@ -115,9 +144,8 @@ class GradientDescentOptimizer(object):
             float : cube root decay factor to adjust learning rate
         '''
 
-        # TODO: Implement cube root polynomial decay factor to adjust learning rate
-
-        return 0.0
+        # Implement cube root polynomial decay factor to adjust learning rate
+        return t ** (-1.0 / 3.0)
 
     def update(self,
                w,
@@ -145,7 +173,7 @@ class GradientDescentOptimizer(object):
                 'momentum_stochastic_gradient_descent'
             lambda_weight_decay : float
                 weight of weight decay
-            beta : str
+            beta : float
                 momentum discount rate
             batch_size : int
                 batch size for stochastic and momentum stochastic gradient descent
@@ -156,54 +184,92 @@ class GradientDescentOptimizer(object):
             numpy : 1 x d weights
         '''
 
-        # TODO: Implement the optimizer update function
+        # Implement the optimizer update function
 
         if self.__momentum is None:
             self.__momentum = np.zeros_like(w)
 
+        alpha = self.__learning_rate
+
         if optimizer_type == 'gradient_descent':
+            
+            # w^(t + 1) = w^(t) - alpha \nabla loss(w^(t))
+            #           = w - alpha * self.__compute_gradients(w, x, y, lambda_weight_decay)
 
-            # TODO: Compute gradients
+            # Compute gradients
+            gradients = self.__compute_gradients(w, x, y, lambda_weight_decay)
 
-            # TODO: Update weights
-            return np.zeros_like(w)
+            # Update weights
+            w = w - alpha * gradients
+            
+            return w
 
         elif optimizer_type == 'momentum_gradient_descent':
+            
+            # v^(t) = beta * v^(t-1) + (1-beta) \nabla loss(w^(t))
+            #       = beta * v^(t-1) + (1-beta) gradients
+            # w^(t + 1) = w^(t) - alpha * v^(t)
 
-            # TODO: Compute gradients
+            # Compute gradients
+            gradients = self.__compute_gradients(w, x, y, lambda_weight_decay)
 
-            # TODO: Compute momentum
+            # Compute momentum
+            self.__momentum = beta * self.__momentum + (1-beta) * gradients
 
-            # TODO: Update weights
-            return np.zeros_like(w)
+            # Update weights
+            w = w - alpha * self.__momentum
+            
+            return w
 
         elif optimizer_type == 'stochastic_gradient_descent':
 
-            # TODO: Implement stochastic gradient descent
+            # Implement stochastic gradient descent
+            
+            # Sample batch from dataset
+            N = x.shape[1]
+            batch_indexes = np.random.choice(range(0, N), batch_size)
+            x_batch = x[:, batch_indexes]
+            y_batch = y[batch_indexes]
 
-            # TODO: Sample batch from dataset
+            # Compute gradients
+            gradients = self.__compute_gradients(w, x_batch, y_batch, lambda_weight_decay)
 
-            # TODO: Compute gradients
+            # Compute cube root decay factor and multiply by learning rate
+            decay_factor = self.__cube_root_decay(time_step)
 
-            # TODO: Compute cube root decay factor and multiply by learning rate
-
-            # TODO: Update weights
-            return np.zeros_like(w)
+            # Update weights
+            w = w - decay_factor * gradients
+            
+            return w
 
         elif optimizer_type == 'momentum_stochastic_gradient_descent':
 
-            # TODO: Implement momentum stochastic gradient descent
+            # v^(t) = beta * v^(t-1) + (1-beta) \nabla loss(w^(t))
+            #       = beta * v^(t-1) + (1-beta) gradients
+            # w^(t + 1) = w^(t) - alpha * v^(t)
+            # Same as before, but loss/gradients are computed for a batch rather than all N samples
 
-            # TODO: Sample batch from dataset
+            # Implement momentum stochastic gradient descent
 
-            # TODO: Compute gradients
+            # Sample batch from dataset
+            N = x.shape[1]
+            batch_indexes = np.random.choice(range(0, N), batch_size)
+            x_batch = x[:, batch_indexes]
+            y_batch = y[batch_indexes]
 
-            # TODO: Compute momentum
+            # Compute gradients
+            gradients = self.__compute_gradients(w, x_batch, y_batch, lambda_weight_decay)
 
-            # TODO: Compute cube root decay factor and multiply by learning rate
+            # Compute momentum
+            self.__momentum = beta * self.__momentum + (1-beta) * gradients
 
-            # TODO: Update weights
-            return np.zeros_like(w)
+            # Compute cube root decay factor and multiply by learning rate
+            decay_factor = self.__cube_root_decay(time_step)
+
+            # Update weights
+            w = w - decay_factor * gradients
+            
+            return w
 
 
 '''
@@ -251,22 +317,35 @@ class RidgeRegressionGradientDescent(object):
                 batch size for stochastic and momentum stochastic gradient descent
         '''
 
-        # TODO: Implement the fit function
+        # Implement the fit function
 
-        # TODO: Initialize weights
+        # Initialize weights (d + 1, 1)
+        self.__weights = np.zeros([x.shape[0] + 1, 1])
+        self.__weights[0] = 1.0
 
-        # TODO: Initialize optimizer
+        # Initialize optimizer
+        self.__optimizer = GradientDescentOptimizer(learning_rate)
 
         for time_step in range(1, t + 1):
 
-            # TODO: Compute loss function
-            loss, loss_data_fidelity, loss_regularization = 0.0, 0.0, 0.0
+            # Compute loss function
+            loss, loss_data_fidelity, loss_regularization = self.__compute_loss(x, y, lambda_weight_decay)
 
             if (time_step % 500) == 0:
                 print('Step={:5}  Loss={:.4f}  Data Fidelity={:.4f}  Regularization={:.4f}'.format(
                     time_step, loss, loss_data_fidelity, loss_regularization))
 
-            # TODO: Update weights
+            # Update weights
+            self.__weights = self.__optimizer.update(
+                self.__weights, 
+                x, 
+                y, 
+                optimizer_type, 
+                lambda_weight_decay, 
+                beta, 
+                batch_size, 
+                time_step
+            )
 
     def predict(self, x):
         '''
@@ -280,9 +359,26 @@ class RidgeRegressionGradientDescent(object):
             numpy : N element vector
         '''
 
-        # TODO: Implements the predict function
+        # Implements the predict function
 
-        return np.zeros(x.shape[1])
+        N = x.shape[1]
+
+        # Add bias to x: (d, N) -> (d + 1, N)
+        x = np.concatenate([np.ones([1, N]), x], axis=0)
+
+        # predictions should be of shape (N, )
+        predictions = np.zeros(N)
+
+        for n in range(N):
+            # x_n : (d + 1, 1)
+            x_n = np.expand_dims(x[:, n], axis=1)
+
+            # y_hat or h_x = w^T x
+            # w^T (d + 1, 1)^T \times x_n (d + 1, 1)
+            prediction = np.matmul(self.__weights.T, x_n)
+            predictions[n] = prediction
+
+        return predictions
 
     def __compute_loss(self, x, y, lambda_weight_decay):
         '''
@@ -302,10 +398,29 @@ class RidgeRegressionGradientDescent(object):
             float : loss regularization
         '''
 
-        # TODO: Implements the __compute_loss function
+        # Implement the __compute_loss function
+        
+        N = x.shape[1]
 
-        loss_data_fidelity = 0.0
-        loss_regularization = 0.0
+        # Add bias to x so that its shape is (d, N) -> (d + 1, N)
+        x = np.concatenate([np.ones([1, N]), x], axis=0)
+
+        # Ridge Regression loss function:
+        # f(w) = 1/N || Xw - y ||^2_2  +  lambda / N || w ||^2_2
+        #      = 1/N sum_n^N (w^T x^n - y^n)^2  +  lambda / N (w^T w)
+
+        data_fidelity_losses = []
+
+        for n in range(N):
+            # x_n : (d + 1 , 1)
+            x_n = np.expand_dims(x[:, n], axis=1)
+
+            prediction = np.matmul(self.__weights.T, x_n)
+            current_data_fidelity_loss = (prediction - y[n]) ** 2
+            data_fidelity_losses = np.append(data_fidelity_losses, current_data_fidelity_loss)
+
+        loss_data_fidelity = np.mean(data_fidelity_losses)
+        loss_regularization = lambda_weight_decay / N * np.matmul(self.__weights.T, self.__weights)
         loss = loss_data_fidelity + loss_regularization
 
         return loss, loss_data_fidelity, loss_regularization
@@ -386,10 +501,10 @@ if __name__ == '__main__':
     ]
 
     # TODO: Select learning rates for each optimizer
-    learning_rates = [0.0, 0.0, 0.0, 0.0]
+    learning_rates = [0.1, 0.1, 0.1, 0.1]
 
     # TODO: Select number of steps (t) to train
-    T = [1, 1, 1, 1]
+    T = [10, 10, 10, 10]
 
     # TODO: Select beta for momentum (do not replace None)
     betas = [None, 0.05, None, 0.05]
@@ -398,6 +513,9 @@ if __name__ == '__main__':
     batch_sizes = [None, None, 1, 1]
 
     # TODO: Convert dataset (N x d) to correct shape (d x N)
+    x_train = np.transpose(x_train, axes=(1, 0))
+    x_val = np.transpose(x_val, axes=(1, 0))
+    x_test = np.transpose(x_test, axes=(1, 0))
 
     print('Results on using Ridge Regression using gradient descent variants')
 
@@ -413,21 +531,32 @@ if __name__ == '__main__':
         if beta is not None:
             assert beta >= 0.05
 
-        # TODO: Initialize ridge regression trained with gradient descent variants
+        # Initialize ridge regression trained with gradient descent variants
+        ridge_grad_descent_model = RidgeRegressionGradientDescent()
 
         print('Fitting with {} using learning rate={:.1E}, t={}'.format(
             optimizer_type, learning_rate, t))
 
-        # TODO: Train ridge regression using gradient descent variants
+        # Train ridge regression using gradient descent variants
+        ridge_grad_descent_model.fit(
+            x=x_train, 
+            y=y_train, 
+            optimizer_type=optimizer_type, 
+            learning_rate=learning_rate, 
+            t=t, 
+            lambda_weight_decay=lambda_weight_decay, 
+            beta=beta, 
+            batch_size=batch_size
+        )
 
-        # TODO: Test model on training set
-        score_mse_grad_descent_train = 0.0
+        # Test model on training set
+        score_mse_grad_descent_train = score_mean_squared_error(ridge_grad_descent_model, x_train, y_train)
         print('Training set mean squared error: {:.4f}'.format(score_mse_grad_descent_train))
 
-        # TODO: Test model on validation set
-        score_mse_grad_descent_val = 0.0
+        # Test model on validation set
+        score_mse_grad_descent_val = score_mean_squared_error(ridge_grad_descent_model, x_val, y_val)
         print('Validation set mean squared error: {:.4f}'.format(score_mse_grad_descent_val))
 
-        # TODO: Test model on testing set
-        score_mse_grad_descent_test = 0.0
+        # Test model on testing set
+        score_mse_grad_descent_test = score_mean_squared_error(ridge_grad_descent_model, x_test, y_test)
         print('Testing set mean squared error: {:.4f}'.format(score_mse_grad_descent_test))
