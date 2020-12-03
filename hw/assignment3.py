@@ -123,22 +123,22 @@ Training set mean squared error: 2749.2155
 Validation set mean squared error: 3722.5782
 Testing set mean squared error: 3169.6860
 Results on using Ridge Regression using gradient descent variants
-Fitting with gradient_descent using learning rate=1.0E-01, t=8000
-Training set mean squared error: 2774.3660
-Validation set mean squared error: 3727.6449
-Testing set mean squared error: 3180.6540
-Fitting with momentum_gradient_descent using learning rate=1.5E-01, t=5000
-Training set mean squared error: 2776.7513
-Validation set mean squared error: 3727.1679
-Testing set mean squared error: 3183.0957
-Fitting with stochastic_gradient_descent using learning rate=5.0E-02, t=20000
-Training set mean squared error: 25841.8291
-Validation set mean squared error: 24473.3987
-Testing set mean squared error: 32345.2797
-Fitting with momentum_stochastic_gradient_descent using learning rate=1.0E-01, t=10
-Training set mean squared error: 17087.4906
-Validation set mean squared error: 17860.2085
-Testing set mean squared error: 15073.6718
+Fitting with gradient_descent using learning rate=1.5E-01, t=9000
+Training set mean squared error: 2762.6766
+Validation set mean squared error: 3732.5916
+Testing set mean squared error: 3171.7095
+Fitting with momentum_gradient_descent using learning rate=2.0E-01, t=7000
+Training set mean squared error: 2762.1484
+Validation set mean squared error: 3732.6714
+Testing set mean squared error: 3171.5082
+Fitting with stochastic_gradient_descent using learning rate=1.0E-01, t=24000
+Training set mean squared error: 2779.3495
+Validation set mean squared error: 3737.1629
+Testing set mean squared error: 3183.5685
+Fitting with momentum_stochastic_gradient_descent using learning rate=2.0E-01, t=20000
+Training set mean squared error: 2789.3232
+Validation set mean squared error: 3730.2398
+Testing set mean squared error: 3222.6476
 '''
 
 
@@ -447,7 +447,7 @@ class RidgeRegressionGradientDescent(object):
         fig = plt.figure()
         fig.suptitle("Loss over timesteps for {}".format(optimizer_type))
         ax = fig.add_subplot(1, 1, 1)
-        plt.plot(time_steps, losses)
+        ax.plot(time_steps, losses)
 
     def predict(self, x):
         '''
@@ -606,10 +606,10 @@ if __name__ == '__main__':
     learning_rates = [0.15, 0.2, 0.1, 0.2]
 
     # Select number of steps (t) to train
-    T = [9000, 7000, 20000, 18000]
+    T = [9000, 7000, 24000, 20000]
 
     # Select beta for momentum (do not replace None)
-    betas = [None, 0.05, None, 0.1]
+    betas = [None, 0.05, None, 0.2]
 
     # Select batch sizes for stochastic and momentum stochastic gradient descent (do not replace None)
     batch_sizes = [None, None, 300, 270]
@@ -625,6 +625,9 @@ if __name__ == '__main__':
         zip(optimizer_types, learning_rates, T, betas, batch_sizes)
 
     for optimizer_type, learning_rate, t, beta, batch_size in hyper_parameters:
+
+        # if optimizer_type != 'momentum_stochastic_gradient_descent': # and optimizer_type != 'stochastic_gradient_descent':
+        #     continue
 
         # Conditions on batch size and beta
         if batch_size is not None:
@@ -666,4 +669,4 @@ if __name__ == '__main__':
     """
     Uncomment the line below to view loss plots:
     """
-    plt.show()
+    # plt.show()
