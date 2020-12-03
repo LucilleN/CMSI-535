@@ -25,7 +25,7 @@ Summary:
     optimizers. The main method loads, splits, and performs polynomial expansion on the 
     sklearn Diabetes data, then trains and tests the sklearn Ridge Regression model for 
     comparison, and finally trains and tests our own implementation of Ridge Regression 
-    with gradient descent using all four optimizer types and different learning rates, 
+    with gradient descent using all four optimizer types, each with different learning rates, 
     timesteps, betas, and batch sizes. The results of our implementation are very close 
     to sklearn's results, with about 3200 testing set MSE loss.
 
@@ -131,14 +131,14 @@ Fitting with momentum_gradient_descent using learning rate=2.0E-01, t=7000
 Training set mean squared error: 2762.1484
 Validation set mean squared error: 3732.6714
 Testing set mean squared error: 3171.5082
-Fitting with stochastic_gradient_descent using learning rate=1.0E-01, t=24000
-Training set mean squared error: 2779.3495
-Validation set mean squared error: 3737.1629
-Testing set mean squared error: 3183.5685
-Fitting with momentum_stochastic_gradient_descent using learning rate=2.0E-01, t=20000
-Training set mean squared error: 2789.3232
-Validation set mean squared error: 3730.2398
-Testing set mean squared error: 3222.6476
+Fitting with stochastic_gradient_descent using learning rate=7.0E-02, t=24000
+Training set mean squared error: 2779.5115
+Validation set mean squared error: 3730.5139
+Testing set mean squared error: 3198.7875
+Fitting with momentum_stochastic_gradient_descent using learning rate=2.5E-01, t=20000
+Training set mean squared error: 2789.0917
+Validation set mean squared error: 3739.5281
+Testing set mean squared error: 3190.7055
 '''
 
 
@@ -603,13 +603,13 @@ if __name__ == '__main__':
     ]
 
     # Select learning rates for each optimizer
-    learning_rates = [0.15, 0.2, 0.1, 0.2]
+    learning_rates = [0.15, 0.2, 0.07, 0.25]
 
     # Select number of steps (t) to train
     T = [9000, 7000, 24000, 20000]
 
     # Select beta for momentum (do not replace None)
-    betas = [None, 0.05, None, 0.2]
+    betas = [None, 0.05, None, 0.15]
 
     # Select batch sizes for stochastic and momentum stochastic gradient descent (do not replace None)
     batch_sizes = [None, None, 300, 270]
