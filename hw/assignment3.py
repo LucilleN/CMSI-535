@@ -3,6 +3,7 @@ import sklearn.datasets as skdata
 import sklearn.metrics as skmetrics
 import sklearn.preprocessing as skpreprocess
 from sklearn.linear_model import Ridge as RidgeRegression
+from matplotlib import pyplot as plt
 
 
 '''
@@ -14,67 +15,123 @@ Collaboration details: N/A
 
 Summary:
 
-    In this assignment, we implemented a GradientDescentOptimizer for Ridge 
-    Regression that contains methods for updating weights using either regular 
-    gradient descent, momentum gradient descent, stochastic gradient descent, or 
-    momentum stochastic gradient descent. We then implemented a 
-    RidgeRegressionGradientDescent class, with fit and predict methods, that can be 
-    trained with a variety of hyperparameters: optimizer type, learning rate (alpha), 
-    timesteps (t), weight decay (lambda), discount factor (beta) for optimizers with 
-    momentum, and batch size (B) for stochastic optimizers. The main method loads, 
-    splits, and performs polynomial expansion on the sklearn Diabetes data, then 
-    trains and tests the sklearn Ridge Regression model for comparison, and finally 
-    trains and tests our own implementation of Ridge Regression with gradient descent 
-    using all four optimizer types and different learning rates, timesteps, betas, 
-    and batch sizes. The results of our implementation are very close to sklearn's 
-    results, with about 3200 testing set MSE loss.
+    In this assignment, we implemented a GradientDescentOptimizer for Ridge Regression 
+    that contains methods for updating weights using either regular gradient descent, 
+    momentum gradient descent, stochastic gradient descent, or momentum stochastic 
+    gradient descent. We then implemented a RidgeRegressionGradientDescent class, with 
+    fit and predict methods, that can be trained with a variety of hyperparameters: 
+    optimizer type, learning rate (alpha), timesteps (t), weight decay (lambda), discount 
+    factor (beta) for optimizers with momentum, and batch size (B) for stochastic 
+    optimizers. The main method loads, splits, and performs polynomial expansion on the 
+    sklearn Diabetes data, then trains and tests the sklearn Ridge Regression model for 
+    comparison, and finally trains and tests our own implementation of Ridge Regression 
+    with gradient descent using all four optimizer types and different learning rates, 
+    timesteps, betas, and batch sizes. The results of our implementation are very close 
+    to sklearn's results, with about 3200 testing set MSE loss.
 
 Please answer the following questions and report your scores:
 
 1. What did you observe when using larger versus smaller momentum for
 momentum gradient descent and momentum stochastic gradient descent?
 
-    With smaller momentums, momentum gradient descent and stochastic momentum gradient descent are slower to converge (and sometimes do not converge at all for stochastic GD, depending on other hyperparameters) than with larger momentums. With a momentum of 0, momentum GD and stochastic momentum GD both become simply regular GD and stochastic GD. With small momentums like 0.05, , and stochastic gradient descent without momentum cna 
-    I found that the regular momentum gradient 
-    descent performs better than momentum stochastic gradient descent; the regular 
-    momentum GD had an MSE score of 3212 on the testing set, the momentum stochastic 
-    GD did worse, with an MSE of 3241. However, when I doubled the momentum to 0.1 
-    for both, the regular momentum GD did not change, but the momentum stochastic GD 
-    improved to be almost exactly the same as the non-stochastic version -- both had 
-    testing set MSE scores of 3212. It seems that using larger momentum helps the 
-    momentum stochastic GD converge faster because by 
-    updating weights with a moving average rather than the gradient at a single 
-    timestep, we are able to eliminate a lot of the noise and instability that 
-    typically makes stochastic gradient descent take longer to train. 
+    With smaller momentums, momentum gradient descent and stochastic momentum gradient 
+    descent are slower to converge (and for stochastic GD, sometimes do not converge at 
+    all, depending on other hyperparameters) than with larger momentums. A momentum of 0 
+    makes momentum GD and momentum stochastic GD both become simply regular GD and 
+    stochastic GD, and stochastic GD especially causes a lot of fluctuations in loss. 
+    With small or no momentums, momentum stochastic GD is thus much slower to converge 
+    than momentum GD because the random sampling causes the loss to fluctuate 
+    significantly, and sometimes it fluctuates so much that the function diverges. As we 
+    increase momentum, the momentum stochastic GD converges much faster since using the 
+    moving average rather than the gradient at a single timestep helps to keep the steps 
+    moving in the right general direction, reducing the amount that the loss bounces 
+    around. Thus, with larger momentums, momentum stochastic GD performs just as well as 
+    non-stochastic momentum GD, and with small or no momentum, the momentum stochastic GD 
+    (like stochastic GD) is slower to converge. Since momentum keeps the loss going in 
+    the right general direction, we are able to use larger learning rates without 
+    diverging. 
 
 2. What did you observe when using larger versus smaller batch size
 for stochastic gradient descent?
 
-    I observed that larger batch sizes took longer to train at each time step, but made the stochastic gradient descent more accurate/more similar to the regular gradient descent optimizer. Smaller batch sizes made the timesteps run much more quickly, but they also made the loss decrease very slowly and sometimes not at all, causing the loss to jump around without converging. This makes sense because increasing the batch size makes the algorithm more similar to the regular gradient descent that uses all N samples without batching. With more samples, each batch can be more representative of the full dataset. 
+    I observed that larger batch sizes took a longer amount of time to train at each time 
+    step, but made the stochastic gradient descent converge in fewer steps so that its 
+    scores were able to end up similar to the regular gradient descent optimizer. Smaller 
+    batch sizes made the timesteps run much more quickly, but they also made the loss 
+    decrease very slowly and sometimes not at all, causing the loss to jump around 
+    without converging. This makes sense because increasing the batch size makes the 
+    algorithm more similar to the regular gradient descent that uses all N samples 
+    without batching; if we increase the size of B all the way to N, then stochastic 
+    gradient descent is just gradient descent. With more samples, each batch can be more 
+    representative of the full dataset, and so we are less likely to diverge, and loss 
+    decreases more at each time step. 
 
 3. Explain the difference between gradient descent, momentum gradient descent,
 stochastic gradient descent, and momentum stochastic gradient descent?
 
-Gradient descent is an iterative optimization algorithm that minimizes loss by updating the weights in "steps" that are proportional to the negative of the gradient of the loss function at each timestep. 
+    Gradient descent is an iterative optimization algorithm that minimizes loss by 
+    updating the weights with the negative of the gradient of the loss function at each 
+    timestep, scaled by some scalar learning rate alpha. Thus, the weights are updated as 
+    follows:
+        w^(t + 1) = w^(t) - alpha * \nabla loss(w^(t))
 
-Momentum gradient descent follows the same process and concept, but instead of updating the weights  
+    Momentum gradient descent follows the same process and concept, but rather than updating 
+    the weights with the just gradient of the loss at the current time step (scaled by some 
+    some learning rate again), we instead update the weights with the momentum, or the moving 
+    average, of the losses; this way, instead of updating with just the current gradient, we 
+    also add a fraction of the previous gradient(s) and thereby keeping the correct general 
+    direction, which helps with convergence. We first compute the momentum at this time step, 
+    which relies on the hyperparameter beta:
+        v^(t) = beta * v^(t-1) + (1-beta) \nabla loss(w^(t))
+    Then we use this momentum to compute the weights for the next time step:
+        w^(t+1) = w^(t) - alpha * v^(t)
+    Where alpha is the learning rate.
+
+    Stochastic gradient descent is almost the same as gradient descent, but it approximates 
+    the gradient of the loss at each time step rather than computing the exact loss on all 
+    data samples. At each time step, rather than summing over all N data samples in the 
+    training set, we randomly choose some batch (of a specified batch size) from the N 
+    samples. We then compute the gradient of the loss on just that subset of data, and use 
+    this to update the weights in the same way as in gradient descent. This is more 
+    computationally efficient and helps to make problems with giant datasets more tractable. 
+    At each timestep, we sample B items from the dataset D, and then update the weights as 
+    follows:
+        w^(t+1) = w^(t) - alpha * \nabla (loss for |B| samples)
+    The loss on the batch B is computed the same way as it is on the whole dataset. Thus, we 
+    can also write this as a sum of the losses for each sample in B:
+        w^(t+1) = w^(t) - alpha * 1/|B| * \sum_b \nabla loss^b(w^(t))
+    Where alpha is the learning rate.
+
+    Momentum stochastic gradient descent combines momentum gradient descent and stochastic 
+    gradient descent. Like in stochastic gradient descent, we sample a batch at each time step 
+    and approximate the gradient of the loss by computing it only on the current batch. Then, 
+    like in momentum gradient descent, rather than simply updating the weights with that 
+    computed gradient for the current timestep, we use the moving average or momentum in order 
+    to keep the loss moving in the correct general direction. Thus, we sample B items from the 
+    dataset D, then compute the momentum using the gradient of the loss for just this batch: 
+        v^(t) = beta * v^(t-1) + (1-beta) 1/|B| * \sum_b \nabla loss^b(w^(t))
+    Then we use this momentum to compute the weights for the next time step:
+        w^(t+1) = w^(t) - alpha * v^(t)
+    Where alpha is the learning rate.
 
 Report your scores here.
+    Note: I didn't paste the loss printouts at every 500 steps because it was getting very 
+    long and clunky.
 
 Results on using scikit-learn Ridge Regression model
 Training set mean squared error: 2749.2155
 Validation set mean squared error: 3722.5782
 Testing set mean squared error: 3169.6860
 Results on using Ridge Regression using gradient descent variants
-Fitting with gradient_descent using learning rate=1.0E-01, t=10
-Training set mean squared error: 5706.2191
-Validation set mean squared error: 5539.8455
-Testing set mean squared error: 7371.7854
-Fitting with momentum_gradient_descent using learning rate=1.0E-01, t=10
-Training set mean squared error: 5706.3651
-Validation set mean squared error: 5541.1250
-Testing set mean squared error: 7366.5416
-Fitting with stochastic_gradient_descent using learning rate=1.0E-01, t=10
+Fitting with gradient_descent using learning rate=1.0E-01, t=8000
+Training set mean squared error: 2774.3660
+Validation set mean squared error: 3727.6449
+Testing set mean squared error: 3180.6540
+Fitting with momentum_gradient_descent using learning rate=1.5E-01, t=5000
+Training set mean squared error: 2776.7513
+Validation set mean squared error: 3727.1679
+Testing set mean squared error: 3183.0957
+Fitting with stochastic_gradient_descent using learning rate=5.0E-02, t=20000
 Training set mean squared error: 25841.8291
 Validation set mean squared error: 24473.3987
 Testing set mean squared error: 32345.2797
@@ -258,10 +315,11 @@ class GradientDescentOptimizer(object):
         elif optimizer_type == 'stochastic_gradient_descent':
 
             # Implement stochastic gradient descent
+            # Same as gradient descent, but sample a batch first
             
             # Sample batch from dataset
             N = x.shape[1]
-            batch_indexes = np.random.choice(range(0, N), batch_size)
+            batch_indexes = np.random.randint(low=0, high=N, size=batch_size)
             x_batch = x[:, batch_indexes]
             y_batch = y[batch_indexes]
 
@@ -278,8 +336,8 @@ class GradientDescentOptimizer(object):
 
         elif optimizer_type == 'momentum_stochastic_gradient_descent':
 
-            # v^(t) = beta * v^(t-1) + (1-beta) \nabla loss(w^(t))
-            #       = beta * v^(t-1) + (1-beta) gradients
+            # v^(t) = beta * v^(t-1) + (1-beta) \nabla loss^B(w^(t))
+            #       = beta * v^(t-1) + (1-beta) gradients_for_batch
             # w^(t + 1) = w^(t) - alpha * v^(t)
             # Same as before, but loss/gradients are computed for a batch rather than all N samples
 
@@ -360,6 +418,9 @@ class RidgeRegressionGradientDescent(object):
         # Initialize optimizer
         self.__optimizer = GradientDescentOptimizer(learning_rate)
 
+        losses = []
+        time_steps = []
+
         for time_step in range(1, t + 1):
 
             # Compute loss function
@@ -368,6 +429,8 @@ class RidgeRegressionGradientDescent(object):
             if (time_step % 500) == 0:
                 print('Step={:5}  Loss={:.4f}  Data Fidelity={:.4f}  Regularization={:.4f}'.format(
                     time_step, loss, loss_data_fidelity, loss_regularization))
+                losses.append(loss)
+                time_steps.append(time_step)
 
             # Update weights
             self.__weights = self.__optimizer.update(
@@ -380,6 +443,11 @@ class RidgeRegressionGradientDescent(object):
                 batch_size, 
                 time_step
             )
+        
+        fig = plt.figure()
+        fig.suptitle("Loss over timesteps for {}".format(optimizer_type))
+        ax = fig.add_subplot(1, 1, 1)
+        plt.plot(time_steps, losses)
 
     def predict(self, x):
         '''
@@ -534,20 +602,19 @@ if __name__ == '__main__':
         'momentum_stochastic_gradient_descent'
     ]
 
-    # TODO: Select learning rates for each optimizer
-    learning_rates = [0.1, 0.1, 0.05, 0.05]
+    # Select learning rates for each optimizer
+    learning_rates = [0.15, 0.2, 0.1, 0.2]
 
-    # TODO: Select number of steps (t) to train
-    T = [8000, 5000, 20000, 17000]
+    # Select number of steps (t) to train
+    T = [9000, 7000, 20000, 18000]
 
-    # TODO: Select beta for momentum (do not replace None)
-    # betas = [None, 0.05, None, 0.05]
-    betas = [None, 0.05, None, 0.05] # both 3212 when betas are 0.1
+    # Select beta for momentum (do not replace None)
+    betas = [None, 0.05, None, 0.1]
 
-    # TODO: Select batch sizes for stochastic and momentum stochastic gradient descent (do not replace None)
-    batch_sizes = [None, None, 300, 250]
+    # Select batch sizes for stochastic and momentum stochastic gradient descent (do not replace None)
+    batch_sizes = [None, None, 300, 270]
 
-    # TODO: Convert dataset (N x d) to correct shape (d x N)
+    # Convert dataset (N x d) to correct shape (d x N)
     x_train = np.transpose(x_train, axes=(1, 0))
     x_val = np.transpose(x_val, axes=(1, 0))
     x_test = np.transpose(x_test, axes=(1, 0))
@@ -558,9 +625,6 @@ if __name__ == '__main__':
         zip(optimizer_types, learning_rates, T, betas, batch_sizes)
 
     for optimizer_type, learning_rate, t, beta, batch_size in hyper_parameters:
-
-        if optimizer_type != 'momentum_stochastic_gradient_descent' and optimizer_type != 'momentum_gradient_descent':
-            continue
 
         # Conditions on batch size and beta
         if batch_size is not None:
@@ -598,3 +662,8 @@ if __name__ == '__main__':
         # Test model on testing set
         score_mse_grad_descent_test = score_mean_squared_error(ridge_grad_descent_model, x_test, y_test)
         print('Testing set mean squared error: {:.4f}'.format(score_mse_grad_descent_test))
+    
+    """
+    Uncomment the line below to view loss plots:
+    """
+    plt.show()
