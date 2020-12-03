@@ -1,15 +1,16 @@
 '''
-Name: Doe, John (Please write names in <Last Name, First Name> format)
+Name: Njoo, Lucille
 
-Collaborators: Doe, Jane (Please write names in <Last Name, First Name> format)
+Collaborators: N/A
 
-Collaboration details: Discussed <function name> implementation details with Jane Doe.
+Collaboration details: N/A
 
 Summary:
 
 TODO: Explain your design for your neural network e.g.
 How many layers, neurons did you use? What kind of activation function did you use?
 Please give reasoning of why you chose a certain number of neurons for some layers.
+
 
 TODO: Report all of your hyper-parameters.
 
@@ -55,7 +56,16 @@ class NeuralNetwork(torch.nn.Module):
     def __init__(self, n_input_feature, n_output):
         super(NeuralNetwork, self).__init__()
 
-        # TODO: Design your neural network
+        # Design your neural network
+        # self.fully_connected_layer_1 = torch.nn.Linear(n_input_feature, 16)
+        # self.fully_connected_layer_2 = torch.nn.Linear(16, 12)
+        # self.fully_connected_layer_3 = torch.nn.Linear(12, 8)
+        self.fully_connected_layer_1 = torch.nn.Linear(n_input_feature, 8)
+        self.fully_connected_layer_2 = torch.nn.Linear(8, 8)
+        self.fully_connected_layer_3 = torch.nn.Linear(8, 8)
+        self.output = torch.nn.Linear(8, n_output)
+
+        self.activation_function = torch.nn.functional.relu
 
     def forward(self, x):
         '''
@@ -68,11 +78,27 @@ class NeuralNetwork(torch.nn.Module):
                     tensor of n_output
         '''
 
-        # TODO: Implement forward function
+        # Implement forward function
+        x1 = self.fully_connected_layer_1(x)
+        theta_x1 = self.activation_function(x1)
 
-        return x
+        x2 = self.fully_connected_layer_1(theta_x1)
+        theta_x2 = self.activation_function(x2)
 
-def train(net, dataloader, n_epoch, scheduler):
+        x3 = self.fully_connected_layer_1(theta_x2)
+        theta_x3 = self.activation_function(x3)
+
+        output = self.output(theta_x3)
+
+        return output
+
+
+def train(net,
+          dataloader,
+          n_epoch,
+          optimizer,
+          learning_rate_decay,
+          learning_rate_decay_period):
     '''
     Trains the network using a learning rate scheduler
 
@@ -84,38 +110,54 @@ def train(net, dataloader, n_epoch, scheduler):
             dataloader for training data
         n_epoch : int
             number of epochs to train
-        scheduler : torch.optim.lr_scheduler
+        optimizer : torch.optim
             https://pytorch.org/docs/stable/optim.html
-            scheduler to adjust learning rate
+            optimizer to use for updating weights
+        learning_rate_decay : float
+            rate of learning rate decay
+        learning_rate_decay_period : int
+            period to reduce learning rate based on decay e.g. every 2 epoch
 
     Returns:
         torch.nn.Module : trained network
     '''
 
-    # TODO: Define cross entropy loss
+    # Define cross entropy loss
+    # https://pytorch.org/docs/stable/generated/torch.nn.CrossEntropyLoss.html
+    loss_function = torch.nn.CrossEntropyLoss()
 
     for epoch in range(n_epoch):
 
         # Accumulate total loss for each epoch
         total_loss = 0.0
 
+        # Decrease learning rate when learning rate decay period is met
+        # e.g. decrease learning rate by a factor of decay rate every 2 epoch
+        if epoch and epoch % learning_rate_decay_period == 0:
+            for param_group in optimizer.param_groups:
+                param_group['lr'] = learning_rate_decay * param_group['lr']
+
         for batch, (images, labels) in enumerate(dataloader):
 
-            # TODO: Vectorize images from (N, H, W, C) to (N, d)
+            # Vectorize images from (N, H, W, C) to (N, d)
+            n_dim = np.prod(images.shape[1:])
+            images = images.view(-1, n_dim)
 
-            # TODO: Forward through the network
+            # Forward through the network
+            outputs = net(images)
 
-            # TODO: Compute loss function
+            # Clear gradients so we don't accumlate them from previous batches
+            optimizer.zero_grad()
 
-            # TODO: Update parameters by backpropagation
+            # Compute loss function
+            loss = loss_function(outputs, labels)
 
-            # TODO: Update learning schedule
+            # Update parameters by backpropagation
+            loss.backward()
+            optimizer.step()
 
-            # TODO: Clear gradients so we don't accumlate them from previous batches
-
-            # TODO: Accumulate total loss for the epoch
-
-            pass
+            # Accumulate total loss for the epoch
+            total_loss += loss.item()
 
         mean_loss = total_loss / float(batch)
 
@@ -138,6 +180,8 @@ def evaluate(net, dataloader, classes):
             list of class names to be used in plot
     '''
 
+    predictions = None
+
     n_correct = 0
     n_sample = 0
 
@@ -146,23 +190,45 @@ def evaluate(net, dataloader, classes):
 
         for (images, labels) in dataloader:
 
-            # TODO: Vectorize images from (N, H, W, C) to (N, d)
+            # Vectorize images from (N, H, W, C) to (N, d)
+            n_dim = np.prod(images.shape[1:])
+            images = images.view(-1, n_dim)
 
-            # TODO: Forward through the network
+            # Forward through the network
+            outputs = net(images)
 
-            # TODO: Take the argmax over the outputs
+            # Take the argmax over the outputs
+            _, predictions = torch.max(outputs, dim=1)
 
             # Accumulate number of samples
             n_sample = n_sample + labels.shape[0]
 
-            # TODO: Check if our prediction is correct
+            # Check if our prediction is correct; if so, increment the number 
+            # correct so we can check the accuracy later
+            n_correct = n_correct + torch.sum(predictions == labels).item()
 
-    # TODO: Compute mean accuracy
-    mean_accuracy = 0.0
-
+    # Compute mean accuracy as a percentage
+    mean_accuracy = n_correct / n_sample * 100
     print('Mean accuracy over %d images: %d %%' % (n_sample, mean_accuracy))
 
+    # TODO: Convert the last batch of images back to original shape
+    images = images.view(shape[0], shape[1], shape[2], shape[3])
+    images = images.cpu().numpy()
+    images = np.transpose(images, (0, 2, 3, 1))
+
+    # TODO: Map the last batch of predictions to their corresponding class labels
+    predictions_class_split = [predictions[np.where(y_iris == label)[0], :] for label in range(len(classes))]
+    #     # This grabs (N_class0 x 3)
+    #     predictions[np.where(y_iris == 0)[0], :],
+    #     # This grabs (N_class1 x 3)
+    #     predictions[np.where(y_iris == 1)[0], :],
+    #     # This grabs (N_class2 x 3)
+    #     predictions[np.where(y_iris == 2)[0], :]
+    # ]
+
     # TODO: Plot images with class names
+    print("predictions_class_split: {}".format(predictions_class_split))
+    # plot_images()
 
 
 def plot_images(X, n_row, n_col, fig_title, subplot_titles):
@@ -254,22 +320,43 @@ if __name__ == '__main__':
     n_input_feature = 16 * 16 * 3
     n_class = 10
 
-    # TODO: Define network
+    # Define network
+    net = NeuralNetwork(
+        n_input_feature=n_input_feature,
+        n_output=n_class)
 
-    # TODO: Setup learning rate SGD optimizer and step function scheduler
+    # Setup learning rate SGD optimizer and step function scheduler
     # https://pytorch.org/docs/stable/optim.html
+    optimizer = torch.optim.SGD(
+        net.parameters(), 
+        lr=args.learning_rate, 
+        weight_decay=args.lambda_weight_decay, 
+        momentum=args.momentum
+    )
 
     if args.train_network:
-        # TODO: Set network to training mode
+        # Set network to training mode
+        net.train()
 
-        # TODO: Train network and save into checkpoint
-
-        pass
+        # Train network and save into checkpoint
+        net = train(
+            net=net,
+            dataloader=dataloader_train,
+            n_epoch=args.n_epoch,
+            optimizer=optimizer,
+            learning_rate_decay=args.learning_rate_decay,
+            learning_rate_decay_period=args.learning_rate_decay_period)
+        torch.save({ 'state_dict' : net.state_dict()}, './checkpoint.pth')
     else:
-        # TODO: Load network from checkpoint
+        # Load network from checkpoint
+        checkpoint = torch.load('./checkpoint.pth')
+        net.load_state_dict(checkpoint['state_dict'])
 
-        pass
+    # Set network to evaluation mode
+    net.eval()
 
-    # TODO: Set network to evaluation mode
-
-    # TODO: Evaluate network on testing set
+    # Evaluate network on testing set
+    evaluate(
+        net=net,
+        dataloader=dataloader_test,
+        classes=classes)
