@@ -82,10 +82,10 @@ class NeuralNetwork(torch.nn.Module):
         x1 = self.fully_connected_layer_1(x)
         theta_x1 = self.activation_function(x1)
 
-        x2 = self.fully_connected_layer_1(theta_x1)
+        x2 = self.fully_connected_layer_2(theta_x1)
         theta_x2 = self.activation_function(x2)
 
-        x3 = self.fully_connected_layer_1(theta_x2)
+        x3 = self.fully_connected_layer_3(theta_x2)
         theta_x3 = self.activation_function(x3)
 
         output = self.output(theta_x3)
@@ -179,7 +179,7 @@ def evaluate(net, dataloader, classes):
         classes : list[str]
             list of class names to be used in plot
     '''
-
+    og_shape = None
     predictions = None
 
     n_correct = 0
@@ -189,6 +189,9 @@ def evaluate(net, dataloader, classes):
     with torch.no_grad():
 
         for (images, labels) in dataloader:
+
+            if not og_shape:
+                og_shape = images.shape
 
             # Vectorize images from (N, H, W, C) to (N, d)
             n_dim = np.prod(images.shape[1:])
@@ -212,12 +215,12 @@ def evaluate(net, dataloader, classes):
     print('Mean accuracy over %d images: %d %%' % (n_sample, mean_accuracy))
 
     # TODO: Convert the last batch of images back to original shape
-    images = images.view(shape[0], shape[1], shape[2], shape[3])
+    images = images.view(og_shape[0], og_shape[1], og_shape[2], og_shape[3])
     images = images.cpu().numpy()
     images = np.transpose(images, (0, 2, 3, 1))
 
     # TODO: Map the last batch of predictions to their corresponding class labels
-    predictions_class_split = [predictions[np.where(y_iris == label)[0], :] for label in range(len(classes))]
+    images_class_split = [images[np.where(predictions == label)[0], :] for label in range(len(classes))]
     #     # This grabs (N_class0 x 3)
     #     predictions[np.where(y_iris == 0)[0], :],
     #     # This grabs (N_class1 x 3)
@@ -227,8 +230,14 @@ def evaluate(net, dataloader, classes):
     # ]
 
     # TODO: Plot images with class names
-    print("predictions_class_split: {}".format(predictions_class_split))
-    # plot_images()
+    print("images_class_split: {}".format(images_class_split))
+    plot_images(
+        X=images_class_split,
+        n_row=5,
+        n_col=2,
+        fig_title='Image Classification Predictions with PyTorch Neural Network',
+        subplot_titles=classes
+    )
 
 
 def plot_images(X, n_row, n_col, fig_title, subplot_titles):
@@ -244,7 +253,7 @@ def plot_images(X, n_row, n_col, fig_title, subplot_titles):
             number of columns in figure
         fig_title : str
             title of plot
-        subplot_titles : str
+        subplot_titles : list[str]
             title of subplot
     '''
 
