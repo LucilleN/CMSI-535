@@ -17,6 +17,7 @@ TODO: Report all of your hyper-parameters.
 
 TODO: Report your scores here. Mean accuracy should exceed 54%
 
+
 '''
 import argparse
 import torch, torchvision
@@ -57,15 +58,28 @@ class NeuralNetwork(torch.nn.Module):
         super(NeuralNetwork, self).__init__()
 
         # Design your neural network
+        self.fully_connected_layer_1 = torch.nn.Linear(n_input_feature, 1024)
+        self.fully_connected_layer_2 = torch.nn.Linear(1024, 512)
+        self.fully_connected_layer_3 = torch.nn.Linear(512, 256)
+        self.fully_connected_layer_4 = torch.nn.Linear(256, 128)
+        self.fully_connected_layer_5 = torch.nn.Linear(128, 64)
+        self.fully_connected_layer_6 = torch.nn.Linear(64, 32)
+        self.fully_connected_layer_7 = torch.nn.Linear(32, 16)
+        self.fully_connected_layer_8 = torch.nn.Linear(16, 8)
+        self.fully_connected_layer_9 = torch.nn.Linear(8, 8)
+        self.fully_connected_layer_10 = torch.nn.Linear(8, 8)
+        
+        self.output = torch.nn.Linear(8, n_output)
+
+        self.activation_function = torch.nn.functional.leaky_relu
+
         # self.fully_connected_layer_1 = torch.nn.Linear(n_input_feature, 16)
         # self.fully_connected_layer_2 = torch.nn.Linear(16, 12)
         # self.fully_connected_layer_3 = torch.nn.Linear(12, 8)
-        self.fully_connected_layer_1 = torch.nn.Linear(n_input_feature, 8)
-        self.fully_connected_layer_2 = torch.nn.Linear(8, 8)
-        self.fully_connected_layer_3 = torch.nn.Linear(8, 8)
-        self.output = torch.nn.Linear(8, n_output)
-
-        self.activation_function = torch.nn.functional.relu
+        # self.fully_connected_layer_4 = torch.nn.Linear(8, 8)
+        # self.output = torch.nn.Linear(8, n_output)
+        # self.activation_function = torch.nn.functional.relu
+        
 
     def forward(self, x):
         '''
@@ -88,7 +102,29 @@ class NeuralNetwork(torch.nn.Module):
         x3 = self.fully_connected_layer_3(theta_x2)
         theta_x3 = self.activation_function(x3)
 
-        output = self.output(theta_x3)
+        x4 = self.fully_connected_layer_4(theta_x3)
+        theta_x4 = self.activation_function(x4)
+
+        x5 = self.fully_connected_layer_5(theta_x4)
+        theta_x5 = self.activation_function(x5)
+
+        x6 = self.fully_connected_layer_6(theta_x5)
+        theta_x6 = self.activation_function(x6)
+
+        x7 = self.fully_connected_layer_7(theta_x6)
+        theta_x7 = self.activation_function(x7)
+
+        x8 = self.fully_connected_layer_8(theta_x7)
+        theta_x8 = self.activation_function(x8)
+
+        x9 = self.fully_connected_layer_9(theta_x8)
+        theta_x9 = self.activation_function(x9)
+
+        x10 = self.fully_connected_layer_10(theta_x9)
+        theta_x10 = self.activation_function(x10)
+
+        output = self.output(theta_x10)
+        # output = self.output(theta_x4)
 
         return output
 
@@ -157,7 +193,7 @@ def train(net,
             optimizer.step()
 
             # Accumulate total loss for the epoch
-            total_loss += loss.item()
+            total_loss = total_loss + loss.item()
 
         mean_loss = total_loss / float(batch)
 
@@ -190,11 +226,10 @@ def evaluate(net, dataloader, classes):
 
         for (images, labels) in dataloader:
 
-            if not og_shape:
-                og_shape = images.shape
+            og_shape = images.shape
 
             # Vectorize images from (N, H, W, C) to (N, d)
-            n_dim = np.prod(images.shape[1:])
+            n_dim = np.prod(og_shape[1:])
             images = images.view(-1, n_dim)
 
             # Forward through the network
@@ -211,7 +246,7 @@ def evaluate(net, dataloader, classes):
             n_correct = n_correct + torch.sum(predictions == labels).item()
 
     # Compute mean accuracy as a percentage
-    mean_accuracy = n_correct / n_sample * 100
+    mean_accuracy = n_correct / n_sample * 100.0
     print('Mean accuracy over %d images: %d %%' % (n_sample, mean_accuracy))
 
     # TODO: Convert the last batch of images back to original shape
@@ -220,7 +255,7 @@ def evaluate(net, dataloader, classes):
     images = np.transpose(images, (0, 2, 3, 1))
 
     # TODO: Map the last batch of predictions to their corresponding class labels
-    images_class_split = [images[np.where(predictions == label)[0], :] for label in range(len(classes))]
+    # images_class_split = [images[np.where(predictions == label)[0], :] for label in range(len(classes))]
     #     # This grabs (N_class0 x 3)
     #     predictions[np.where(y_iris == 0)[0], :],
     #     # This grabs (N_class1 x 3)
@@ -228,15 +263,17 @@ def evaluate(net, dataloader, classes):
     #     # This grabs (N_class2 x 3)
     #     predictions[np.where(y_iris == 2)[0], :]
     # ]
+    prediction_classes = [classes[integer_label] for integer_label in predictions]
 
     # TODO: Plot images with class names
-    print("images_class_split: {}".format(images_class_split))
+    # print("images_class_split: {}".format(images_class_split))
+    print("images: {}".format(images.shape))
     plot_images(
-        X=images_class_split,
-        n_row=5,
+        X=images,
+        n_row=2,
         n_col=2,
         fig_title='Image Classification Predictions with PyTorch Neural Network',
-        subplot_titles=classes
+        subplot_titles=prediction_classes
     )
 
 
@@ -249,7 +286,7 @@ def plot_images(X, n_row, n_col, fig_title, subplot_titles):
             N x h x w numpy array
         n_row : int
             number of rows in figure
-        n_col : list[str]
+        n_col : int
             number of columns in figure
         fig_title : str
             title of plot
@@ -261,15 +298,18 @@ def plot_images(X, n_row, n_col, fig_title, subplot_titles):
     fig.suptitle(fig_title)
 
     for i in range(1, n_row * n_col + 1):
+    # for i in range(0, n_row * n_col):
 
         ax = fig.add_subplot(n_row, n_col, i)
 
-        x_i = X[i, ...]
+        index = i-1
+        x_i = X[index, ...]
+        subplot_title_i = subplot_titles[index]
 
         if len(x_i.shape) == 1:
             x_i = np.expand_dims(x_i, axis=0)
 
-        ax.set_title(subplot_titles[i])
+        ax.set_title(subplot_title_i)
         ax.imshow(x_i)
 
         plt.box(False)
@@ -369,3 +409,5 @@ if __name__ == '__main__':
         net=net,
         dataloader=dataloader_test,
         classes=classes)
+
+    plt.show()
