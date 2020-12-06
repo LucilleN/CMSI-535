@@ -58,18 +58,28 @@ class NeuralNetwork(torch.nn.Module):
         super(NeuralNetwork, self).__init__()
 
         # Design your neural network
+
+        # This gets 52% !!!
+        # python3 exercise10.py --train_network --batch_size 8 --n_epoch 100 --learning_rate 0.001 --lambda_weight_decay 0.0 --learning_rate_decay 0.9 --learning_rate_decay_period 2 
         self.fully_connected_layer_1 = torch.nn.Linear(n_input_feature, 1024)
         self.fully_connected_layer_2 = torch.nn.Linear(1024, 512)
         self.fully_connected_layer_3 = torch.nn.Linear(512, 256)
         self.fully_connected_layer_4 = torch.nn.Linear(256, 128)
         self.fully_connected_layer_5 = torch.nn.Linear(128, 64)
-        self.fully_connected_layer_6 = torch.nn.Linear(64, 32)
-        self.fully_connected_layer_7 = torch.nn.Linear(32, 16)
-        self.fully_connected_layer_8 = torch.nn.Linear(16, 8)
-        self.fully_connected_layer_9 = torch.nn.Linear(8, 8)
-        self.fully_connected_layer_10 = torch.nn.Linear(8, 8)
+        # self.fully_connected_layer_6 = torch.nn.Linear(64, 32)
+        # self.fully_connected_layer_7 = torch.nn.Linear(32, 16)
+        # self.fully_connected_layer_8 = torch.nn.Linear(16, 8)
+        # self.fully_connected_layer_9 = torch.nn.Linear(8, 8)
+        # self.fully_connected_layer_10 = torch.nn.Linear(8, 8)
         
-        self.output = torch.nn.Linear(8, n_output)
+        self.output = torch.nn.Linear(64, n_output)
+
+        # This gives us 26% accuracy
+        # python3 exercise10.py --train_network --batch_size 8 --n_epoch 100 --learning_rate 0.0001 --lambda_weight_decay 0.0 --learning_rate_decay 0.9 --learning_rate_decay_period 2 
+        # self.fully_connected_layer_1 = torch.nn.Linear(n_input_feature, 512)
+        # self.fully_connected_layer_2 = torch.nn.Linear(512, 16)
+        # self.fully_connected_layer_3 = torch.nn.Linear(16, 16)
+        # self.output = torch.nn.Linear(16, n_output)
 
         self.activation_function = torch.nn.functional.leaky_relu
 
@@ -108,23 +118,23 @@ class NeuralNetwork(torch.nn.Module):
         x5 = self.fully_connected_layer_5(theta_x4)
         theta_x5 = self.activation_function(x5)
 
-        x6 = self.fully_connected_layer_6(theta_x5)
-        theta_x6 = self.activation_function(x6)
+        # x6 = self.fully_connected_layer_6(theta_x5)
+        # theta_x6 = self.activation_function(x6)
 
-        x7 = self.fully_connected_layer_7(theta_x6)
-        theta_x7 = self.activation_function(x7)
+        # x7 = self.fully_connected_layer_7(theta_x6)
+        # theta_x7 = self.activation_function(x7)
 
-        x8 = self.fully_connected_layer_8(theta_x7)
-        theta_x8 = self.activation_function(x8)
+        # x8 = self.fully_connected_layer_8(theta_x7)
+        # theta_x8 = self.activation_function(x8)
 
-        x9 = self.fully_connected_layer_9(theta_x8)
-        theta_x9 = self.activation_function(x9)
+        # x9 = self.fully_connected_layer_9(theta_x8)
+        # theta_x9 = self.activation_function(x9)
 
-        x10 = self.fully_connected_layer_10(theta_x9)
-        theta_x10 = self.activation_function(x10)
+        # x10 = self.fully_connected_layer_10(theta_x9)
+        # theta_x10 = self.activation_function(x10)
 
-        output = self.output(theta_x10)
-        # output = self.output(theta_x4)
+        # output = self.output(theta_x10)
+        output = self.output(theta_x5)
 
         return output
 
