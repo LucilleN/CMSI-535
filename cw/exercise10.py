@@ -7,16 +7,55 @@ Collaboration details: N/A
 
 Summary:
 
-TODO: Explain your design for your neural network e.g.
+    In this exercise, we used PyTorch to design a Neural Network class by choosing how many
+    layers it would have, how many neurons per layer, and what activation function(s) to use. 
+    We then implemented functions to train the network using a variety of hyperparameters, as 
+    well as to evaluate the network and display its predictions of some images. In our main 
+    method, we implemented a training loop that trains the network over n_epochs, then
+    evaluates it on the testing set. We tuned the network by running this file with different 
+    combinations of the hyperparameter values (reported below).
+
+Explain your design for your neural network e.g.
 How many layers, neurons did you use? What kind of activation function did you use?
 Please give reasoning of why you chose a certain number of neurons for some layers.
 
+    My neural network has 5 hidden layers and 1 output layer, all of which are linear. 
+    The first layer takes in n_input_features and has 1024 neurons, the second has 512, 
+    the third has 256, the fourth has 128, and the fifth has 64 neurons; the final output 
+    layer takes in those 64 inputs and outputs n_output dimensions. I chose to make the 
+    first layer have 1024 dimensions because the input is made of 16x16 images with 3 
+    color channels per pixel, which means that each sample has 16 x 16 x 3 = 768 features.
+    I wanted to do some feature expansion on this input by having a layer with more 
+    output neurons than inputs, rather than using polynomial feature expansion, because 
+    going from 768 to 1024 features increases the dimensionality. Then for the rest of 
+    the layers, I gradually decreased the number of neurons so that there wouldn't be any
+    dramatic reductions in dimensionality that might result in too much information loss. 
+    For all layers, I used the Leaky ReLu activation function.
 
-TODO: Report all of your hyper-parameters.
+Report all of your hyper-parameters.
 
+    Run this command to train the network:
+        python3 exercise10.py --train_network --batch_size 8 --n_epoch 60 --learning_rate 0.01 --lambda_weight_decay 0.0001 --learning_rate_decay 0.9 --learning_rate_decay_period 2 
 
-TODO: Report your scores here. Mean accuracy should exceed 54%
+    The hyperparameters are:
+        - batch size: 8 samples
+        - number of epochs: 60
+        - learning rate: 0.01
+        - learning rate decay: 0.9 (learning rate becomes 90% of what it was before, every 2 epochs)
+        - learning rate decay period: every 2 epochs
+        - momentum: 0.9 
+        - lambda weight decay: 0.0001
 
+Report your scores here. Mean accuracy should exceed 54%
+    
+    Epoch=1  Loss: 2.102
+    Epoch=2  Loss: 1.799
+    Epoch=3  Loss: 1.669
+    ...
+    Epoch=58  Loss: 0.012
+    Epoch=59  Loss: 0.011
+    Epoch=60  Loss: 0.010
+    Mean accuracy over 10000 images: 55 %
 
 '''
 import argparse
@@ -59,37 +98,20 @@ class NeuralNetwork(torch.nn.Module):
 
         # Design your neural network
 
-        # This gets 52% !!!
-        # python3 exercise10.py --train_network --batch_size 8 --n_epoch 100 --learning_rate 0.001 --lambda_weight_decay 0.0 --learning_rate_decay 0.9 --learning_rate_decay_period 2 
+        # This gets 55% !!!
+        # python3 exercise10.py --train_network --batch_size 8 --n_epoch 100 --learning_rate 0.01 --lambda_weight_decay 0.0 --learning_rate_decay 0.9 --learning_rate_decay_period 2 
         self.fully_connected_layer_1 = torch.nn.Linear(n_input_feature, 1024)
         self.fully_connected_layer_2 = torch.nn.Linear(1024, 512)
+        # self.fully_connected_layer_1 = torch.nn.Linear(n_input_feature, 512)
+        # self.fully_connected_layer_2 = torch.nn.Linear(512, 512)
         self.fully_connected_layer_3 = torch.nn.Linear(512, 256)
         self.fully_connected_layer_4 = torch.nn.Linear(256, 128)
         self.fully_connected_layer_5 = torch.nn.Linear(128, 64)
-        # self.fully_connected_layer_6 = torch.nn.Linear(64, 32)
-        # self.fully_connected_layer_7 = torch.nn.Linear(32, 16)
-        # self.fully_connected_layer_8 = torch.nn.Linear(16, 8)
-        # self.fully_connected_layer_9 = torch.nn.Linear(8, 8)
-        # self.fully_connected_layer_10 = torch.nn.Linear(8, 8)
         
         self.output = torch.nn.Linear(64, n_output)
 
-        # This gives us 26% accuracy
-        # python3 exercise10.py --train_network --batch_size 8 --n_epoch 100 --learning_rate 0.0001 --lambda_weight_decay 0.0 --learning_rate_decay 0.9 --learning_rate_decay_period 2 
-        # self.fully_connected_layer_1 = torch.nn.Linear(n_input_feature, 512)
-        # self.fully_connected_layer_2 = torch.nn.Linear(512, 16)
-        # self.fully_connected_layer_3 = torch.nn.Linear(16, 16)
-        # self.output = torch.nn.Linear(16, n_output)
-
         self.activation_function = torch.nn.functional.leaky_relu
 
-        # self.fully_connected_layer_1 = torch.nn.Linear(n_input_feature, 16)
-        # self.fully_connected_layer_2 = torch.nn.Linear(16, 12)
-        # self.fully_connected_layer_3 = torch.nn.Linear(12, 8)
-        # self.fully_connected_layer_4 = torch.nn.Linear(8, 8)
-        # self.output = torch.nn.Linear(8, n_output)
-        # self.activation_function = torch.nn.functional.relu
-        
 
     def forward(self, x):
         '''
@@ -118,22 +140,6 @@ class NeuralNetwork(torch.nn.Module):
         x5 = self.fully_connected_layer_5(theta_x4)
         theta_x5 = self.activation_function(x5)
 
-        # x6 = self.fully_connected_layer_6(theta_x5)
-        # theta_x6 = self.activation_function(x6)
-
-        # x7 = self.fully_connected_layer_7(theta_x6)
-        # theta_x7 = self.activation_function(x7)
-
-        # x8 = self.fully_connected_layer_8(theta_x7)
-        # theta_x8 = self.activation_function(x8)
-
-        # x9 = self.fully_connected_layer_9(theta_x8)
-        # theta_x9 = self.activation_function(x9)
-
-        # x10 = self.fully_connected_layer_10(theta_x9)
-        # theta_x10 = self.activation_function(x10)
-
-        # output = self.output(theta_x10)
         output = self.output(theta_x5)
 
         return output
@@ -259,25 +265,15 @@ def evaluate(net, dataloader, classes):
     mean_accuracy = n_correct / n_sample * 100.0
     print('Mean accuracy over %d images: %d %%' % (n_sample, mean_accuracy))
 
-    # TODO: Convert the last batch of images back to original shape
+    # Convert the last batch of images back to original shape
     images = images.view(og_shape[0], og_shape[1], og_shape[2], og_shape[3])
     images = images.cpu().numpy()
     images = np.transpose(images, (0, 2, 3, 1))
 
-    # TODO: Map the last batch of predictions to their corresponding class labels
-    # images_class_split = [images[np.where(predictions == label)[0], :] for label in range(len(classes))]
-    #     # This grabs (N_class0 x 3)
-    #     predictions[np.where(y_iris == 0)[0], :],
-    #     # This grabs (N_class1 x 3)
-    #     predictions[np.where(y_iris == 1)[0], :],
-    #     # This grabs (N_class2 x 3)
-    #     predictions[np.where(y_iris == 2)[0], :]
-    # ]
+    # Map the last batch of predictions to their corresponding class labels
     prediction_classes = [classes[integer_label] for integer_label in predictions]
 
-    # TODO: Plot images with class names
-    # print("images_class_split: {}".format(images_class_split))
-    print("images: {}".format(images.shape))
+    # Plot images with class names
     plot_images(
         X=images,
         n_row=2,
