@@ -131,14 +131,14 @@ Fitting with momentum_gradient_descent using learning rate=2.0E-01, t=7000
 Training set mean squared error: 2762.1484
 Validation set mean squared error: 3732.6714
 Testing set mean squared error: 3171.5082
-Fitting with stochastic_gradient_descent using learning rate=7.0E-02, t=24000
-Training set mean squared error: 2779.5115
-Validation set mean squared error: 3730.5139
-Testing set mean squared error: 3198.7875
-Fitting with momentum_stochastic_gradient_descent using learning rate=2.5E-01, t=20000
-Training set mean squared error: 2789.0917
-Validation set mean squared error: 3739.5281
-Testing set mean squared error: 3190.7055
+Fitting with stochastic_gradient_descent using learning rate=9.0E-01, t=25000
+Training set mean squared error: 2782.1856
+Validation set mean squared error: 3733.4334
+Testing set mean squared error: 3194.4434
+Fitting with momentum_stochastic_gradient_descent using learning rate=9.5E-01, t=22000
+Training set mean squared error: 2788.4913
+Validation set mean squared error: 3738.2610
+Testing set mean squared error: 3202.6331
 '''
 
 
@@ -216,7 +216,7 @@ class GradientDescentOptimizer(object):
             gradient = 2 * (prediction - y[n]) * x_n
             gradients[:, n] = np.squeeze(gradient)
 
-         # Retain the last dimension so that we have (d + 1, 1)
+        # Retain the last dimension so that we have (d + 1, 1)
         gradient_with_mse_only = np.mean(gradients, axis=1, keepdims=True)
 
         gradient_with_lambda = gradient_with_mse_only + 2 * lambda_weight_decay / N * w
@@ -327,10 +327,10 @@ class GradientDescentOptimizer(object):
             gradients = self.__compute_gradients(w, x_batch, y_batch, lambda_weight_decay)
 
             # Compute cube root decay factor and multiply by learning rate
-            decay_factor = self.__cube_root_decay(time_step)
+            decayed_learning_rate = self.__cube_root_decay(time_step) * alpha
 
             # Update weights
-            w = w - decay_factor * gradients
+            w = w - decayed_learning_rate * gradients
             
             return w
 
@@ -356,10 +356,10 @@ class GradientDescentOptimizer(object):
             self.__momentum = beta * self.__momentum + (1-beta) * gradients
 
             # Compute cube root decay factor and multiply by learning rate
-            decay_factor = self.__cube_root_decay(time_step)
+            decayed_learning_rate = self.__cube_root_decay(time_step) * alpha
 
             # Update weights
-            w = w - decay_factor * gradients
+            w = w - decayed_learning_rate * gradients
             
             return w
 
@@ -603,13 +603,15 @@ if __name__ == '__main__':
     ]
 
     # Select learning rates for each optimizer
-    learning_rates = [0.15, 0.2, 0.07, 0.25]
+    # learning_rates = [0.15, 0.2, 0.07, 0.25]
+    learning_rates = [0.15, 0.2, 0.9, 0.95]
 
     # Select number of steps (t) to train
-    T = [9000, 7000, 24000, 20000]
+    T = [9000, 7000, 25000, 22000]
 
     # Select beta for momentum (do not replace None)
     betas = [None, 0.05, None, 0.15]
+    # betas = [None, 0.05, None, 0.2]
 
     # Select batch sizes for stochastic and momentum stochastic gradient descent (do not replace None)
     batch_sizes = [None, None, 300, 270]
@@ -625,9 +627,6 @@ if __name__ == '__main__':
         zip(optimizer_types, learning_rates, T, betas, batch_sizes)
 
     for optimizer_type, learning_rate, t, beta, batch_size in hyper_parameters:
-
-        # if optimizer_type != 'momentum_stochastic_gradient_descent': # and optimizer_type != 'stochastic_gradient_descent':
-        #     continue
 
         # Conditions on batch size and beta
         if batch_size is not None:
